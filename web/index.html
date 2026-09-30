@@ -286,16 +286,27 @@ const S={step:"home",off:new Set(),scale:null,m:{buffer:3,vraag:500,energie:100,
 const $=s=>document.querySelector(s), view=$("#view"), box=$("#box");
 const esc=s=>String(s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 
+/* Veilige HTML. html`...` escapet elke ${waarde}; enkel een fragment dat zelf uit html`...` komt (of een lijst daarvan)
+   gaat ongewijzigd door. setHTML() is de enige plek die HTML in de pagina zet: het neemt enkel zo'n fragment aan en
+   parst het met DOMParser (voert geen scripts uit). Zet HTML nooit op een andere manier in de pagina. */
+const SAFE=Symbol("safe-html");
+function part(v){if(v==null)return "";if(v[SAFE])return v.s;if(Array.isArray(v))return v.map(part).join("");return esc(v)}
+function html(strings,...vals){let s=strings[0];vals.forEach((v,i)=>{s+=part(v)+strings[i+1]});return {[SAFE]:true,s}}
+function setHTML(el,frag){
+  if(!frag||!frag[SAFE]) throw new TypeError("setHTML: enkel fragmenten uit html`...`");
+  el.replaceChildren(...new DOMParser().parseFromString(frag.s,"text/html").body.childNodes);
+}
+
 function hookBack(){view.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>go('home'))}
 function go(step){S.step=step;S.call=false;render();$("#screen").scrollTop=0}
 document.querySelectorAll("#steps button").forEach(b=>b.onclick=()=>go(b.dataset.step));
 
 function scaleHTML(){const s=S.scale, order=Object.entries(s.counts).filter(([k])=>k!=="No specific situation").sort((a,b)=>b[1]-a[1]), max=order[0][1];
-  return `<div><h3>Scale · one engine for everyone</h3>
+  return html`<div><h3>Scale · one engine for everyone</h3>
   <div class="scale"><div class="kpi"><b>${s.n.toLocaleString("en-GB")}</b><span>customers scored</span></div>
   <div class="kpi"><b>${Math.max(1,Math.round(s.ms))} ms</b><span>in your browser, no LLM · all 2.3M KBC customers ≈ ${Math.max(1,Math.round(s.ms/10000*2300000/1000))} s</span></div>
   <div class="kpi"><b>€0</b><span>LLM cost for recognition</span></div></div></div>
-  <div class="bars">${order.map(([k,v])=>`<div class="${k==="Retirement in sight"?"me":""}"><span>${k}${k==="Retirement in sight"?" ← Marc":""}</span><i style="width:${v/max*100}%"></i><em>${v.toLocaleString("en-GB")} cust.</em></div>`).join("")}</div>`}
+  <div class="bars">${order.map(([k,v])=>html`<div class="${k==="Retirement in sight"?"me":""}"><span>${k}${k==="Retirement in sight"?" ← Marc":""}</span><i style="width:${v/max*100}%"></i><em>${v.toLocaleString("en-GB")} cust.</em></div>`)}</div>`}
 
 function render(){
   document.querySelectorAll("#steps button").forEach(b=>b.dataset.step===S.step?b.setAttribute("aria-current","step"):b.removeAttribute("aria-current"));
@@ -303,83 +314,84 @@ function render(){
   hookBack();
 }
 
-const ic={home:'<path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/>',list:'<path d="M4 6h16M4 12h16M4 18h16"/>',inv:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',offer:'<path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>'};
-const TABBAR=`<nav class="tabbar">${[["home","Start",1],["list","My KBC"],["inv","Investments"],["offer","Offer"]].map(([k,t,on])=>`<div class="${on?"on":""}"><svg viewBox="0 0 24 24">${ic[k]}</svg>${t}</div>`).join("")}</nav>`;
-const NAV=t=>`<div class="navh"><button data-back aria-label="Back">‹</button><span>${t}</span><i class="kdot"></i></div>`;
+const ic={home:html`<path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/>`,list:html`<path d="M4 6h16M4 12h16M4 18h16"/>`,inv:html`<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>`,offer:html`<path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>`};
+const TABBAR=html`<nav class="tabbar">${[["home","Start",1],["list","My KBC"],["inv","Investments"],["offer","Offer"]].map(([k,t,on])=>html`<div class="${on?"on":""}"><svg viewBox="0 0 24 24">${ic[k]}</svg>${t}</div>`)}</nav>`;
+const NAV=t=>html`<div class="navh"><button data-back aria-label="Back">‹</button><span>${t}</span><i class="kdot"></i></div>`;
 function rHome(){
   const sit=SITUATIONS[0], res=scoreOne(MARC,S.off), show=res.naam==="Retirement in sight";
   const sigs=sit.sig.map(([k,w,txt,t])=>({k,w,txt,on:t(MARC)&&!S.off.has(k)}));
   let score=0; sigs.forEach(s=>{if(s.on)score+=s.w});
-  view.innerHTML=`<div class="topbar"><div class="av">M</div><div class="search"><span>How can I help?</span><span class="kchip"><i class="kdot"></i>Kate</span></div></div>
+  const sigRows=sigs.map(s=>html`<div class="sig ${s.on?"":"off"}"><span>${s.txt}</span><input type="checkbox" class="switch" id="sw_${s.k}" data-k="${s.k}" ${s.on?"checked":""} aria-label="Signal: ${s.txt}"><div class="bar"><i style="width:${s.w/0.35*100}%"></i></div></div>`);
+  setHTML(view,html`<div class="topbar"><div class="av">M</div><div class="search"><span>How can I help?</span><span class="kchip"><i class="kdot"></i>Kate</span></div></div>
     <div class="accs"><div class="acc"><div class="tile"></div><div class="t"><span>Personal account</span><b>1 990<small>,00 EUR</small></b></div></div>
     <div class="acc sv"><div class="tile"></div><div class="t"><span>Savings account</span><b>42 000<small>,00 EUR</small></b></div></div></div>
     <div class="pay"><div><em>29/09</em><span>Colruyt</span><span>-64,20 EUR</span></div><div><em>25/09</em><span>Salary</span><span>+3 900,00 EUR</span></div><div><em>12/09</em><span>Energy</span><span>-118,00 EUR</span></div></div>
     <div class="sec">For you</div>
-    ${show?`<div class="card"><span class="eyebrow"><i class="kdot"></i>Kate's tips<span class="x">✕</span></span>
+    ${show?html`<div class="card"><span class="eyebrow"><i class="kdot"></i>Kate's tips<span class="x">✕</span></span>
       <h2>Marc, your retirement is in sight.</h2>
       <p>It's 9 years away. See in two minutes what you can still do.</p>
       <div class="row"><button class="btn" id="toFuture">Talk to yourself at 72</button></div>
       <details class="why" open><summary>Why am I seeing this?</summary>
-      ${sigs.map(s=>`<div class="sig ${s.on?"":"off"}"><span>${s.txt}</span><input type="checkbox" class="switch" id="sw_${s.k}" data-k="${s.k}" ${s.on?"checked":""} aria-label="Signal: ${s.txt}"><div class="bar"><i style="width:${s.w/0.35*100}%"></i></div></div>`).join("")}
+      ${sigRows}
       <p class="quiet">Switch a signal off and we stop using it.</p></details></div>`
-    :`<div class="card"><span class="eyebrow"><i class="kdot"></i>Kate · signal switched off</span><h2>We won't show this anymore.</h2><p>You switched signals off, so the score dropped below the threshold. You can switch them back on anytime.</p>
-      <details class="why" open><summary>My signals</summary>${sigs.map(s=>`<div class="sig ${s.on?"":"off"}"><span>${s.txt}</span><input type="checkbox" class="switch" id="sw_${s.k}" data-k="${s.k}" ${s.on?"checked":""} aria-label="Signal: ${s.txt}"><div class="bar"><i style="width:${s.w/0.35*100}%"></i></div></div>`).join("")}</details></div>`}
-    `+TABBAR;
+    :html`<div class="card"><span class="eyebrow"><i class="kdot"></i>Kate · signal switched off</span><h2>We won't show this anymore.</h2><p>You switched signals off, so the score dropped below the threshold. You can switch them back on anytime.</p>
+      <details class="why" open><summary>My signals</summary>${sigRows}</details></div>`}
+    ${TABBAR}`);
   view.querySelectorAll(".switch").forEach(el=>el.onchange=()=>{el.checked?S.off.delete(el.dataset.k):S.off.add(el.dataset.k);rHome()});
   const b=$("#toFuture"); if(b) b.onclick=()=>go("future");
-  box.innerHTML=`<p class="lead">The bank recognizes a life situation with weighted rules, not a black box.</p>
+  setHTML(box,html`<p class="lead">The bank recognizes a life situation with weighted rules, not a black box.</p>
   ${scaleHTML()}
   <div class="trace"><h3>Trace · customer C-000058 (Marc, 58)</h3>
-  ${sigs.map(s=>`<div class="ln">${s.on?'<span class="hi">✓</span>':'<span class="dim">·</span>'} ${s.k.padEnd(20)} <span class="${s.on?"hi":"dim"}">+${s.w.toFixed(2)}</span>${S.off.has(s.k)?' <span class="warn">switched off by customer</span>':''}</div>`).join("")}
-  <div class="ln">score = <span class="${score>=THRESHOLD?"hi":"warn"}">${score.toFixed(2)}</span>  threshold = ${THRESHOLD}  →  ${score>=THRESHOLD?'<span class="hi">show card "Retirement in sight"</span>':'<span class="warn">no card</span>'}</div>
-  <div class="ln dim">channel: KBC Mobile + Kate with voice · tone: calm, concrete, no jargon</div></div>`;
+  ${sigs.map(s=>html`<div class="ln">${s.on?html`<span class="hi">✓</span>`:html`<span class="dim">·</span>`} ${s.k.padEnd(20)} <span class="${s.on?"hi":"dim"}">+${s.w.toFixed(2)}</span>${S.off.has(s.k)?html` <span class="warn">switched off by customer</span>`:""}</div>`)}
+  <div class="ln">score = <span class="${score>=THRESHOLD?"hi":"warn"}">${score.toFixed(2)}</span>  threshold = ${THRESHOLD}  →  ${score>=THRESHOLD?html`<span class="hi">show card "Retirement in sight"</span>`:html`<span class="warn">no card</span>`}</div>
+  <div class="ln dim">channel: KBC Mobile + Kate with voice · tone: calm, concrete, no jargon</div></div>`);
 }
 
 function rFuture(){
   const f=project(MARC), txt=futureText(f), nums=numbersIn(txt), ok=allowed(f), bad=nums.filter(n=>!ok.has(n));
-  view.innerHTML=NAV("Kate · Future you")+`<div class="avatar"><i>72</i><span>Marc, at 72<br><span class="quiet">speaks only with calculated numbers</span></span></div>
+  setHTML(view,html`${NAV("Kate · Future you")}<div class="avatar"><i>72</i><span>Marc, at 72<br><span class="quiet">speaks only with calculated numbers</span></span></div>
     <div class="scen"><div><span class="quiet">As now</span><b>${eur(f.scenario_a.extra_per_month_in_retirement)}</b><span class="quiet">extra per month</span></div>
     <div class="b"><span class="quiet">+ €${EXTRA} saved/month</span><b>${eur(f.scenario_b.extra_per_month_in_retirement)}</b><span class="quiet">extra per month</span></div></div>
-    <div class="bubble">${esc(txt)}</div>
+    <div class="bubble">${txt}</div>
     <p class="quiet">A projection, not advice. Assumptions: retirement at ${PENSIOEN}, ${REND*100}% return, capital spread over ${JAREN_UIT} years.</p>
     <div class="card" id="hosp"><span class="eyebrow"><i class="kdot"></i>Kate's tips · looking ahead</span><h2>Marc, one more thing for later: your hospital cover.</h2>
       <p>Your hospital insurance comes with your job and stops when you retire. Premiums can then rise sharply. Preparing early costs less.</p>
       <span class="quiet">Source: KBC Verzekeringen</span><div class="row"><button class="btn small ghost">Remind me next year</button></div></div>
     <div class="card"><span class="eyebrow">From insight to agreement</span><p>Turn what your future self wants into rules Kate follows.</p>
-    <div class="row"><button class="btn" id="toMandate">Create my Life Mandate</button></div></div>`;
+    <div class="row"><button class="btn" id="toMandate">Create my Life Mandate</button></div></div>`);
   $("#toMandate").onclick=()=>go("mandate");
-  box.innerHTML=`<p class="lead">The language model speaks, but it only receives these facts. Every number in its answer is checked.</p>
-  <div class="trace" style="border:0;padding:0"><h3>Input for the language model (only source, no name)</h3><div class="ln jsonbox">${esc(JSON.stringify(f,null,2))}</div></div>
-  <div class="trace"><h3>Number check on the output</h3><div>${nums.map(n=>`<span class="chip ${ok.has(n)?"":"badc"}">${n.toLocaleString("en-GB")} ${ok.has(n)?"✓":"✗"}</span>`).join("")}</div>
-  <div class="ln">${bad.length?'<span class="bad">rejected → safe template shown</span>':'<span class="hi">all '+nums.length+' numbers come from the calculation → shown</span>'}</div>
+  setHTML(box,html`<p class="lead">The language model speaks, but it only receives these facts. Every number in its answer is checked.</p>
+  <div class="trace" style="border:0;padding:0"><h3>Input for the language model (only source, no name)</h3><div class="ln jsonbox">${JSON.stringify(f,null,2)}</div></div>
+  <div class="trace"><h3>Number check on the output</h3><div>${nums.map(n=>html`<span class="chip ${ok.has(n)?"":"badc"}">${n.toLocaleString("en-GB")} ${ok.has(n)?"✓":"✗"}</span>`)}</div>
+  <div class="ln">${bad.length?html`<span class="bad">rejected → safe template shown</span>`:html`<span class="hi">all ${nums.length} numbers come from the calculation → shown</span>`}</div>
   <div class="ln dim">no products · no funds · fixed system prompt · question max. 300 characters</div></div>
   <div class="trace" id="hosptrace"><h3>Look-ahead rule · hospital cover</h3>
   <div class="ln"><span class="hi">✓</span> hospital_cover_via_employer = true</div>
   <div class="ln"><span class="hi">✓</span> years_to_retirement = 9  (≤ 10)</div>
-  <div class="ln">→ <span class="hi">flag now, not at retirement</span></div></div>`;
+  <div class="ln">→ <span class="hi">flag now, not at retirement</span></div></div>`);
 }
 
 function rMandate(){
   const m=S.m;
-  view.innerHTML=NAV("Kate · Life Mandate")+`<div><h2 style="font-family:var(--f-display);margin:4px 0 0;font-size:22px">Your rules. Kate acts within them.</h2></div>
+  setHTML(view,html`${NAV("Kate · Life Mandate")}<div><h2 style="font-family:var(--f-display);margin:4px 0 0;font-size:22px">Your rules. Kate acts within them.</h2></div>
     <div class="rule"><label for="r1">Emergency buffer never below</label><input type="range" id="r1" min="1" max="12" value="${m.buffer}"><span class="val">${m.buffer} months of expenses</span></div>
     <div class="rule"><label for="r2">Ask me first above</label><input type="range" id="r2" min="100" max="5000" step="100" value="${m.vraag}"><span class="val">€${m.vraag}</span></div>
     <div class="rule"><label for="r3">Auto-switch energy from a saving of</label><input type="range" id="r3" min="25" max="500" step="25" value="${m.energie}"><span class="val">€${m.energie} a year</span></div>
     <div class="rule"><div class="row" style="justify-content:space-between"><label for="r4">Block large amounts to new payees at night</label><input type="checkbox" class="switch" id="r4" ${m.nacht?"checked":""}></div></div>
-    <button class="btn" id="sign">${S.signed?"Approved ✓ · simulate the next week":"I approve these rules"}</button>`;
+    <button class="btn" id="sign">${S.signed?"Approved ✓ · simulate the next week":"I approve these rules"}</button>`);
   const upd=()=>{m.buffer=+$("#r1").value;m.vraag=+$("#r2").value;m.energie=+$("#r3").value;m.nacht=$("#r4").checked;S.signed=false;S.log=[];rMandate();hookBack()};
   ["#r1","#r2","#r3"].forEach(id=>$(id).oninput=upd); $("#r4").onchange=upd;
   $("#sign").onclick=()=>{if(S.signed){go("week")}else{S.signed=true;rMandate();hookBack()}};
-  box.innerHTML=`<p class="lead">The customer approves rules, not every action. That lets an assistant act without breaking trust.</p>
+  setHTML(box,html`<p class="lead">The customer approves rules, not every action. That lets an assistant act without breaking trust.</p>
   <div class="trace" style="border:0;padding:0"><h3>Mandate as policy (machine-readable)</h3>
-  ${regels(m).map((r,i)=>`<div class="ln"><span class="hi">rule ${i+1}</span>  ${esc(r)}</div>`).join("")}
+  ${regels(m).map((r,i)=>html`<div class="ln"><span class="hi">rule ${i+1}</span>  ${r}</div>`)}
   <div class="ln dim">{"buffer_months_min": ${m.buffer}, "ask_above": ${m.vraag}, "energy_auto_saving": ${m.energie}, "block_new_payee_at_night": ${m.nacht}}</div>
-  <div class="ln">status: ${S.signed?'<span class="hi">approved by Marc</span>':'<span class="warn">not approved yet · agent does not act</span>'}</div></div>`;
+  <div class="ln">status: ${S.signed?html`<span class="hi">approved by Marc</span>`:html`<span class="warn">not approved yet · agent does not act</span>`}</div></div>`);
 }
 
 async function rWeek(){
-  if(!S.signed){view.innerHTML=`<div class="card"><h2>Your mandate first.</h2><p>Without approved rules, Kate does not act.</p><button class="btn" id="back">Go to my mandate</button></div>`;$("#back").onclick=()=>go("mandate");
-    box.innerHTML=`<p class="lead">No mandate, no action.</p>`;return}
+  if(!S.signed){setHTML(view,html`<div class="card"><h2>Your mandate first.</h2><p>Without approved rules, Kate does not act.</p><button class="btn" id="back">Go to my mandate</button></div>`);$("#back").onclick=()=>go("mandate");
+    setHTML(box,html`<p class="lead">No mandate, no action.</p>`);return}
   if(!S.log.length){for(const a of ACTIES){const d=beslis(a,S.m,MARC);d.tijd=`${String(a.uur).padStart(2,"0")}:${a.uur===23?"10":"00"}`;d.hash=await hash({...d,m:S.m});S.log.push(d)}S.shown=0;tick();return}
   if(S.shown<S.log.length){tick();return}
   drawWeek();
@@ -388,25 +400,25 @@ function tick(){if(S.step!=="week")return;if(S.shown<S.log.length){S.shown++;dra
 function drawWeek(){
   const label={ok:"Executed",ask:"Asks first",block:"Blocked"};
   const items=S.log.slice(0,S.shown);
-  view.innerHTML=NAV("Kate · Activity")+`<div><span class="eyebrow">This week</span><h2 style="font-family:var(--f-display);margin:4px 0 0;font-size:24px">Kate acted ${items.length} times.</h2></div>
-    ${items.map(d=>{const a=ACTIES.find(x=>x.id===d.actie);return `<div class="note ${d.beslissing}"><span class="st">${label[d.beslissing]} · rule ${d.regel}</span><b>${esc(d.description)}</b><span class="quiet">${esc(a.ctx)}</span><span>${esc(d.waarom)}</span>
-      ${d.beslissing==="ask"&&!d.gekozen?`<div class="row"><button class="btn small" data-ok="${d.actie}">Approve</button><button class="btn small ghost" data-no="${d.actie}">Decline</button></div>`:""}
-      ${d.gekozen?`<span class="quiet">You chose: ${d.gekozen}</span>`:""}</div>`}).join("")}
-    ${S.shown<S.log.length?'<p class="quiet">…</p>':'<button class="btn ghost" id="again">Play again</button>'}`;
+  setHTML(view,html`${NAV("Kate · Activity")}<div><span class="eyebrow">This week</span><h2 style="font-family:var(--f-display);margin:4px 0 0;font-size:24px">Kate acted ${items.length} times.</h2></div>
+    ${items.map(d=>{const a=ACTIES.find(x=>x.id===d.actie);return html`<div class="note ${d.beslissing}"><span class="st">${label[d.beslissing]} · rule ${d.regel}</span><b>${d.description}</b><span class="quiet">${a.ctx}</span><span>${d.waarom}</span>
+      ${d.beslissing==="ask"&&!d.gekozen?html`<div class="row"><button class="btn small" data-ok="${d.actie}">Approve</button><button class="btn small ghost" data-no="${d.actie}">Decline</button></div>`:""}
+      ${d.gekozen?html`<span class="quiet">You chose: ${d.gekozen}</span>`:""}</div>`})}
+    ${S.shown<S.log.length?html`<p class="quiet">…</p>`:html`<button class="btn ghost" id="again">Play again</button>`}`);
   view.querySelectorAll("[data-ok],[data-no]").forEach(b=>b.onclick=()=>{const d=S.log.find(x=>x.actie===(b.dataset.ok||b.dataset.no));d.gekozen=b.dataset.ok?"approved":"declined";drawWeek()});
   hookBack();
   const ag=$("#again"); if(ag) ag.onclick=()=>{S.log=[];rWeek()};
   const fraud=items.find(d=>d.actie==="A3"&&d.beslissing==="block");
   const screen=$("#screen"); screen.querySelector(".call")?.remove();
-  if(fraud&&!fraud.gezien){const c=document.createElement("div");c.className="call";c.innerHTML=`<div><i class="kdot" style="width:64px;height:64px"></i><p>Kate is calling</p><h3>Quick check, Marc</h3></div>
+  if(fraud&&!fraud.gezien){const c=document.createElement("div");c.className="call";setHTML(c,html`<div><i class="kdot" style="width:64px;height:64px"></i><p>Kate is calling</p><h3>Quick check, Marc</h3></div>
     <p class="big">Did someone ask you to transfer €2,400? A bank never asks that. The payment stays on hold until you confirm it at your branch or with your card reader.</p>
-    <div class="row" style="justify-content:center"><button class="btn" id="hang">Understood, don't send it</button></div>`;screen.appendChild(c);
+    <div class="row" style="justify-content:center"><button class="btn" id="hang">Understood, don't send it</button></div>`);screen.appendChild(c);
     c.querySelector("#hang").onclick=()=>{fraud.gezien=true;c.remove()}}
-  box.innerHTML=`<p class="lead">Every action is checked against the mandate and gets a receipt.</p>
+  setHTML(box,html`<p class="lead">Every action is checked against the mandate and gets a receipt.</p>
   <div style="overflow-x:auto"><table class="log"><thead><tr><th>time</th><th>action</th><th>decision</th><th>rule</th><th>receipt</th></tr></thead><tbody>
-  ${items.map(d=>`<tr><td>${d.tijd}</td><td>${esc(d.description)}</td><td class="${d.beslissing==="ok"?"hi":d.beslissing==="ask"?"warn":"bad"}">${label[d.beslissing]}${d.gekozen?" → "+d.gekozen:""}</td><td>${d.regel}</td><td class="dim">${d.hash}</td></tr>`).join("")}
+  ${items.map(d=>html`<tr><td>${d.tijd}</td><td>${d.description}</td><td class="${d.beslissing==="ok"?"hi":d.beslissing==="ask"?"warn":"bad"}">${label[d.beslissing]}${d.gekozen?" → "+d.gekozen:""}</td><td>${d.regel}</td><td class="dim">${d.hash}</td></tr>`)}
   </tbody></table></div>
-  <div class="trace"><div class="ln">A scammer can call Marc, but he cannot get through Marc's mandate.</div><div class="ln dim">audit log: readable for the customer and for compliance</div></div>`;
+  <div class="trace"><div class="ln">A scammer can call Marc, but he cannot get through Marc's mandate.</div><div class="ln dim">audit log: readable for the customer and for compliance</div></div>`);
 }
 
 
