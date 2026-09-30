@@ -8,12 +8,13 @@ signaal uitzetten en direct zien wat er verandert.
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 import pandas as pd
 
 THRESHOLD = 0.6
+GEEN_SITUATIE = "Geen bijzondere situatie"
 
 
 @dataclass(frozen=True)
@@ -95,7 +96,9 @@ SITUATIONS: tuple[Situation, ...] = (
         "Fraudegevoelig moment",
         (
             Signal("senior", 0.3, "Je bent 65 of ouder", lambda d: d.leeftijd >= 65),
-            Signal("nieuwe_begunstigde", 0.5, "Groot bedrag naar een nieuwe begunstigde", lambda d: d.nieuwe_begunstigde_groot.astype(bool)),
+            Signal(
+                "nieuwe_begunstigde", 0.5, "Groot bedrag naar een nieuwe begunstigde", lambda d: d.nieuwe_begunstigde_groot.astype(bool)
+            ),
             Signal("nacht", 0.2, "Op een ongewoon uur", lambda d: d.nachtelijke_tx.astype(bool)),
         ),
         "{naam}even checken.",
@@ -120,7 +123,7 @@ def score_all(df: pd.DataFrame) -> tuple[pd.DataFrame, float]:
     best_score = scores.max(axis=1)
     out = pd.DataFrame({
         "klant_id": df.klant_id,
-        "situatie": best.where(best_score >= THRESHOLD, "Geen bijzondere situatie"),
+        "situatie": best.where(best_score >= THRESHOLD, GEEN_SITUATIE),
         "score": best_score.round(2),
     })
     return out, time.perf_counter() - t0

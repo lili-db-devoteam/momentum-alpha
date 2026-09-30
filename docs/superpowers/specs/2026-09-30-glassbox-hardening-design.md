@@ -1,6 +1,6 @@
 # Glass Box Banking — hardening & deploy design
 
-Date: 2026-09-30 · Status: draft for review
+Date: 2026-09-30 · Status: approved
 
 ## Goal
 
@@ -49,7 +49,7 @@ glassbox/
 
 ### Extensibility
 
-`app.py` holds one list:
+`ui/registry.py` holds one list (so tests can import it without running the app):
 
 ```python
 TABS = [("1 · Bankiersview", bankier.render), ("2 · App van de klant", klantapp.render), ...]
@@ -136,11 +136,11 @@ without the key and never shown in the UI. `speak()` takes any object with
 ### Runtime hardening
 
 - `.streamlit/config.toml`: `server.headless=true`, `server.enableXsrfProtection=true`,
-  `server.enableCORS=false`, `server.maxUploadSize=1`,
+  `server.maxUploadSize=1`,
   `browser.gatherUsageStats=false`, `client.showErrorDetails=false`,
-  `client.toolbarMode="minimal"`.
+  `client.toolbarMode="minimal"`. CORS protection stays at Streamlit's default (on); setting enableCORS=false conflicts with XSRF protection.
 - `load()` cache: `max_entries=3`.
-- Dockerfile: `python:3.12-slim`, pinned deps, non-root user, `PORT` env
+- Dockerfile: `python:3.14-slim (matches the dev machine so pins resolve identically)`, pinned deps, non-root user, `PORT` env
   (default 8501) used in the start command, `HEALTHCHECK` on `/_stcore/health`,
   no secrets baked in. `.dockerignore` excludes `.env`, `.streamlit/secrets.toml`,
   `.git`, tests caches.

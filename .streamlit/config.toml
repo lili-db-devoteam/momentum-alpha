@@ -1,0 +1,13 @@
+# Veilige standaarden. CORS-bescherming staat standaard aan; niet uitzetten,
+# dat botst met XSRF-bescherming.
+[server]
+headless = true
+enableXsrfProtection = true
+maxUploadSize = 1
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = false
+toolbarMode = "minimal"
