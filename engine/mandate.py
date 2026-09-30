@@ -62,10 +62,15 @@ def beslis(actie: Actie, mandaat: Mandaat, saldo: float, uitgaven_pm: float) -> 
         besl, regel, waarom = GEBLOKKEERD, 4, "Groot bedrag, nieuwe begunstigde, 's nachts. Kate belt je om te checken."
     elif actie.soort == "overschrijving_spaargeld" and (saldo - actie.bedrag) < mandaat.buffer_maanden_min * uitgaven_pm:
         rest = round((saldo - actie.bedrag) / max(uitgaven_pm, 1), 1)
-        besl, regel, waarom = GEBLOKKEERD, 1, f"Na deze actie heb je nog maar {rest} maanden buffer; je minimum is {mandaat.buffer_maanden_min}."
+        besl, regel, waarom = GEBLOKKEERD, 1, (
+            f"Na deze actie heb je nog maar {rest} maanden buffer; "
+            f"je minimum is {mandaat.buffer_maanden_min}."
+        )
     elif actie.soort == "energie":
         if actie.besparing_per_jaar > mandaat.energie_auto_besparing:
-            besl, regel, waarom = UITGEVOERD, 3, f"Besparing €{actie.besparing_per_jaar:.0f} is meer dan je grens van €{mandaat.energie_auto_besparing}."
+            besl, regel, waarom = UITGEVOERD, 3, (
+                f"Besparing €{actie.besparing_per_jaar:.0f} is meer dan je grens van €{mandaat.energie_auto_besparing}."
+            )
         else:
             besl, regel, waarom = VRAAG, 3, "Besparing is te klein om automatisch over te stappen."
     elif actie.bedrag > mandaat.vraag_boven:

@@ -11,7 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from engine.data import MARC_ID, generate_customers
-from engine.future_self import EXTRA_SPAREN, PENSIOENLEEFTIJD, RENDEMENT, project, speak
+from engine.future_self import PENSIOENLEEFTIJD, RENDEMENT, project, speak
 from engine.mandate import DEMO_ACTIES, GEBLOKKEERD, UITGEVOERD, Mandaat, beslis
 from engine.model import SITUATION_BY_NAME, THRESHOLD, explain, reasons_text, score_all
 
@@ -21,7 +21,7 @@ st.set_page_config(page_title="Glass Box Banking", page_icon="🔍", layout="wid
 try:
     if "GEMINI_API_KEY" in st.secrets and not os.environ.get("GEMINI_API_KEY"):
         os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
-except Exception:
+except Exception:  # noqa: S110 - geen secrets-bestand is prima; de app werkt dan zonder API-key
     pass
 
 
@@ -64,7 +64,7 @@ with tab1:
     counts = data.loc[data.situatie != "Geen bijzondere situatie", "situatie"].value_counts()
     st.bar_chart(counts, horizontal=True, x_label="Aantal klanten", y_label="")
 
-    st.markdown("**Hoe het model beslist** (drempel: score ≥ %.1f)" % THRESHOLD)
+    st.markdown(f"**Hoe het model beslist** (drempel: score ≥ {THRESHOLD:.1f})")
     regels = [{"Situatie": s.naam, "Signaal": sig.uitleg, "Gewicht": sig.weight}
               for s in SITUATION_BY_NAME.values() for sig in s.signalen]
     with st.expander("Alle regels en gewichten bekijken"):
@@ -155,7 +155,8 @@ with tab3:
         if audio.exists():
             st.audio(str(audio))
         if fs["check_ok"]:
-            st.success(f"Cijfercheck OK: alle getallen ({', '.join(map(str, fs['getallen']))}) komen uit de berekening. Bron: {fs['bron']}.")
+            getallen = ", ".join(map(str, fs["getallen"]))
+            st.success(f"Cijfercheck OK: alle getallen ({getallen}) komen uit de berekening. Bron: {fs['bron']}.")
         else:
             st.warning(f"Cijfercheck: getallen {fs['fout']} kwamen niet uit de berekening. Getoond: {fs['bron']}.")
             if fs.get("geweigerd"):
@@ -167,8 +168,8 @@ with tab3:
 # ---------------------------------------------------------------- 4. Levensmandaat
 with tab4:
     st.subheader("Het Levensmandaat: de klant schrijft de regels, de agent handelt erbinnen")
-    l, r = st.columns([1, 1.4])
-    with l, st.container(border=True):
+    links, r = st.columns([1, 1.4])
+    with links, st.container(border=True):
         st.markdown(f"**Mandaat van {naam}**")
         m = Mandaat(
             buffer_maanden_min=st.slider("Noodbuffer nooit onder (maanden)", 1, 12, 3),
