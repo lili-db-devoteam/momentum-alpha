@@ -20,9 +20,6 @@ from ui.registry import TABS
 DEMO_MODE = "demo" in st.query_params  # ?demo=1: enkel de telefoon + glass box, zonder zijbalk en tabs
 st.set_page_config(page_title="Glass Box Banking", page_icon="🔍", layout="wide",
                    initial_sidebar_state="collapsed" if DEMO_MODE else "auto")
-if DEMO_MODE:
-    phone_demo.render_fullscreen()
-    st.stop()
 
 
 def _secrets() -> dict:
@@ -63,24 +60,32 @@ except ConfigError as exc:
     st.error(f"Configuratiefout: {exc}")
     st.stop()
 
-st.title("Glass Box Banking")
-st.caption("KBC herkent wie je nu bent, handelt binnen jouw regels en bewaakt wie je wordt. En legt altijd uit waarom. "
-           "· Synthetische data, geen echte klanten.")
+if not DEMO_MODE:
+    st.title("Glass Box Banking")
+    st.caption("KBC herkent wie je nu bent, handelt binnen jouw regels en bewaakt wie je wordt. En legt altijd uit waarom. "
+               "· Synthetische data, geen echte klanten.")
 
-n = st.sidebar.select_slider("Aantal synthetische klanten", [1_000, 10_000, 100_000], value=10_000, key="aantal")
+n = 10_000 if DEMO_MODE else st.sidebar.select_slider("Aantal synthetische klanten", [1_000, 10_000, 100_000], value=10_000, key="aantal")
 data, secs = load(n)
 
-st.sidebar.markdown("**Bekijk als klant**")
-voorbeelden = {"Marc (58)": MARC_ID}
-for sit in SITUATION_BY_NAME:
-    ids = data.loc[data.situatie == sit, "klant_id"]
-    if len(ids) and sit != "Pensioen in zicht":
-        voorbeelden[f"Voorbeeld: {sit}"] = ids.iloc[0]
-keuze = st.sidebar.selectbox("Klant", list(voorbeelden), key="klant", label_visibility="collapsed")
-klant = data.loc[data.klant_id == voorbeelden[keuze]].iloc[0]
+if DEMO_MODE:
+    keuze_id = MARC_ID
+else:
+    st.sidebar.markdown("**Bekijk als klant**")
+    voorbeelden = {"Marc (58)": MARC_ID}
+    for sit in SITUATION_BY_NAME:
+        ids = data.loc[data.situatie == sit, "klant_id"]
+        if len(ids) and sit != "Pensioen in zicht":
+            voorbeelden[f"Voorbeeld: {sit}"] = ids.iloc[0]
+    keuze = st.sidebar.selectbox("Klant", list(voorbeelden), key="klant", label_visibility="collapsed")
+    keuze_id = voorbeelden[keuze]
+klant = data.loc[data.klant_id == keuze_id].iloc[0]
 
 ctx = DemoContext(settings=settings, data=data, klant=klant, naam=klant["naam"] or "Klant", score_secs=secs,
                   llm=get_llm(), global_limiter=get_global_limiter())
+if DEMO_MODE:
+    phone_demo.render_fullscreen(ctx)
+    st.stop()
 for tab, (_, render) in zip(st.tabs([label for label, _ in TABS]), TABS, strict=True):
     with tab:
         render(ctx)

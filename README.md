@@ -10,7 +10,7 @@ KBC herkent wie je nu bent, handelt binnen jouw regels en bewaakt wie je wordt. 
 
 | Tab | Laag | Wat |
 |---|---|---|
-| 1 · Bankiersview | Understand + Scale | Een uitlegbaar model (gewogen regels) scoort 10.000 synthetische klanten in milliseconden op levenssituatie. Elke klant krijgt zijn redenen mee. Geen LLM, dus geen LLM-kost voor herkenning. |
+| 1 · Demo: Marc | Alle lagen | Eén scherm: links de telefoon van de klant, rechts de glass box. Situatie, signalen, projectie, cijfercheck en mandaatbeslissingen komen uit de Python-engine; de pagina verwoordt en tekent ze. Schermvullend via `/?demo=1`. |
 | 2 · App van de klant | Adapt | De homepage toont een kaart die past bij de situatie, met kanaal en toon per situatie. "Waarom zie ik dit?" toont de signalen en gewichten; de klant kan elk signaal uitzetten en ziet de kaart verdwijnen. |
 | 3 · Future Self | Hook | Python berekent twee scenario's. Gemini spreekt als de klant op 72, maar krijgt enkel die cijfers. Een cijfercheck weigert elke output met een getal dat niet uit de berekening komt. Geen productadvies. |
 | 4 · Levensmandaat | Mandaat | De klant keurt eigen regels goed. De agent handelt erbinnen: energiewissel automatisch, grote betaling eerst vragen, nachtelijke overschrijving naar nieuwe begunstigde geblokkeerd, buffer beschermd. Elk besluit krijgt een ontvangstbewijs in een hashketen; "Probeer te knoeien" toont hoe aanpassen meteen opvalt. |
@@ -87,6 +87,9 @@ Principe: **het model beslist, het LLM formuleert alleen.**
 
 - Alle data is synthetisch; er is geen koppeling met echte KBC-systemen.
 - Acties in het mandaat (energie-agent, betalingen) zijn gesimuleerd.
+- In de demo-tab zijn de ontvangstbewijzen korte hashes die in de browser berekend worden. De echte hashketen met knoeidemo staat in tab 4.
+- In de demo-tab spreekt Future Self met Gemini als er een API-key is, anders met het sjabloon; dat staat in de glass box bij "source". De tekst is Nederlands, de rest van de demo Engels.
+- Zonder de Python-gegevens (HTML los geopend) valt de demo terug op een JavaScript-kopie van de engine.
 - Het audit-log leeft in de browsersessie; een hashketen alleen kan niet zien dat het *laatste* bewijs is weggelaten. In productie hoort het anker (laatste hash) extern bewaard.
 - De globale limiet geldt per proces; op Cloud Run dus per instantie.
 - Aannames in de projectie (pensioen op 67, 3% rendement, 20 uitkeerjaren) zijn demo-waarden, geen advies.

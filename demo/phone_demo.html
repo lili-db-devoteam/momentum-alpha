@@ -175,7 +175,11 @@ table.log td{padding:6px;border-bottom:1px solid #1B2438;vertical-align:top}
   <p class="foot">Prototype. All customer data is synthetic; the agent's actions are simulated. The model decides; the LLM only phrases.</p>
 </div>
 
+<script>window.__ENGINE__=/*ENGINE*/null;</script>
 <script>
+/* Met window.__ENGINE__ (door ui/phone_demo.py ingevuld met uitkomsten van de Python-engine) rekent deze pagina niets zelf uit:
+   model, projectie en mandaat komen uit engine/*.py. Zonder die gegevens (bestand los geopend) valt ze terug op de JS-spiegel hieronder. */
+const E=window.__ENGINE__;
 /* ---------- Engine (spiegel van engine/*.py) ---------- */
 const THRESHOLD = 0.6;
 const SITUATIONS = [
@@ -259,6 +263,7 @@ function numbersIn(t){return [...new Set((t.match(/\d[\d.,]*/g)||[]).map(x=>+x.r
 function allowed(f){const s=new Set([72]);(function w(v){if(v&&typeof v==="object")Object.values(v).forEach(w);else if(typeof v==="number")s.add(v)})(f);return s}
 
 /* Levensmandaat */
+function mandateKey(id,m){return id==="A1"?`e${m.energie}`:id==="A2"?`v${m.vraag}`:id==="A3"?`n${+m.nacht}v${m.vraag}`:`b${m.buffer}v${m.vraag}`}
 function beslis(a,m,c){
   const nacht=a.uur>=22||a.uur<7, rules=regels(m);
   let d;
@@ -267,8 +272,18 @@ function beslis(a,m,c){
   else if(a.soort==="energie") d=a.besparing>m.energie?["ok",3,`Saving of €${a.besparing} is above your limit of €${m.energie}.`]:["ask",3,"Saving too small to switch automatically."];
   else if(a.bedrag>m.vraag) d=["ask",2,`${eur(a.bedrag)} is above your limit of €${m.vraag}.`];
   else d=["ok",2,`Below your limit of €${m.vraag}.`];
-  return {actie:a.id,description:a.txt,beslissing:d[0],regel:d[1],regeltekst:rules[d[1]-1],waarom:d[2]};
+  /* Met de Python-engine beslist engine.mandate.beslis: beslissing en regel komen uit de tabel, deze pagina verwoordt ze enkel. */
+  if(E){const p=E.mandate[a.id][mandateKey(a.id,m)];
+    if(p[0]!==d[0]||p[1]!==d[1]) d=[p[0],p[1],d[2]];
+    d[2]=phrase(a,m,c,p[0],p[1],d[2])}
+  return {actie:a.id,description:a.txt,beslissing:d[0],regel:d[1],regeltekst:rules[d[1]-1],waarom:d[2],bron:E?"python":"js"};
 }
+function phrase(a,m,c,besl,regel,fallback){
+  if(regel===4) return "Large amount, new payee, at night. Kate is calling you.";
+  if(regel===1) return `After this, only ${((c.savings-a.bedrag)/c.expenses).toFixed(1)} months of buffer left; your minimum is ${m.buffer}.`;
+  if(regel===3) return besl==="ok"?`Saving of €${a.besparing} is above your limit of €${m.energie}.`:"Saving too small to switch automatically.";
+  if(regel===2) return besl==="ask"?`${eur(a.bedrag)} is above your limit of €${m.vraag}.`:`Below your limit of €${m.vraag}.`;
+  return fallback}
 function regels(m){const r=[`My emergency buffer never drops below ${m.buffer} months of expenses.`,`Anything above €${m.vraag}: ask me first.`,`Switch to cheaper energy if I save more than €${m.energie} a year.`];
   if(m.nacht) r.push("A large amount at night to a new payee: always block it and call me."); return r}
 const ACTIES=[
@@ -293,7 +308,7 @@ document.querySelectorAll("#steps button").forEach(b=>b.onclick=()=>go(b.dataset
 function scaleHTML(){const s=S.scale, order=Object.entries(s.counts).filter(([k])=>k!=="No specific situation").sort((a,b)=>b[1]-a[1]), max=order[0][1];
   return `<div><h3>Scale · one engine for everyone</h3>
   <div class="scale"><div class="kpi"><b>${s.n.toLocaleString("en-GB")}</b><span>customers scored</span></div>
-  <div class="kpi"><b>${Math.max(1,Math.round(s.ms))} ms</b><span>in your browser, no LLM</span></div>
+  <div class="kpi"><b>${Math.max(1,Math.round(s.ms))} ms</b><span>${E?"by the Python model, no LLM":"in your browser, no LLM"}</span></div>
   <div class="kpi"><b>€0</b><span>LLM cost for recognition</span></div></div></div>
   <div class="bars">${order.map(([k,v])=>`<div class="${k==="Retirement in sight"?"me":""}"><span>${k}${k==="Retirement in sight"?" ← Marc":""}</span><i style="width:${v/max*100}%"></i><em>${v}</em></div>`).join("")}</div>`}
 
@@ -307,9 +322,10 @@ const ic={home:'<path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/>',list:'<path d="M4 6h16
 const TABBAR=`<nav class="tabbar">${[["home","Start",1],["list","My KBC"],["inv","Investments"],["offer","Offer"]].map(([k,t,on])=>`<div class="${on?"on":""}"><svg viewBox="0 0 24 24">${ic[k]}</svg>${t}</div>`).join("")}</nav>`;
 const NAV=t=>`<div class="navh"><button data-back aria-label="Back">‹</button><span>${t}</span><i class="kdot"></i></div>`;
 function rHome(){
-  const sit=SITUATIONS[0], res=scoreOne(MARC,S.off), show=res.naam==="Retirement in sight";
-  const sigs=sit.sig.map(([k,w,txt,t])=>({k,w,txt,on:t(MARC)&&!S.off.has(k)}));
-  let score=0; sigs.forEach(s=>{if(s.on)score+=s.w});
+  const sit=SITUATIONS[0], tr=E?E.trace[[...S.off].sort().join(",")]:null;
+  const show=tr?tr.show:scoreOne(MARC,S.off).naam==="Retirement in sight";
+  const sigs=sit.sig.map(([k,w,txt,t])=>({k,w:tr?tr.w[k]:w,txt,on:tr?tr.on[k]:t(MARC)&&!S.off.has(k)}));
+  let score=0; sigs.forEach(s=>{if(s.on)score+=s.w}); if(tr) score=tr.score;
   view.innerHTML=`<div class="topbar"><div class="av">M</div><div class="search"><span>How can I help?</span><span class="kchip"><i class="kdot"></i>Kate</span></div></div>
     <div class="accs"><div class="acc"><div class="tile"></div><div class="t"><span>Personal account</span><b>1 990<small>,00 EUR</small></b></div></div>
     <div class="acc sv"><div class="tile"></div><div class="t"><span>Savings account</span><b>42 000<small>,00 EUR</small></b></div></div></div>
@@ -337,19 +353,22 @@ function rHome(){
 }
 
 function rFuture(){
-  const f=project(MARC), txt=futureText(f), nums=numbersIn(txt), ok=allowed(f), bad=nums.filter(n=>!ok.has(n));
+  const f=project(MARC), txt=E?E.future.tekst:futureText(f), nums=E?E.future.getallen:numbersIn(txt);
+  const ok=E?new Set(E.future.toegestaan):allowed(f), bad=nums.filter(n=>!ok.has(n));
+  const aPm=E?E.future.a_pm:f.scenario_a.extra_per_month_in_retirement, bPm=E?E.future.b_pm:f.scenario_b.extra_per_month_in_retirement;
   view.innerHTML=NAV("Kate · Future you")+`<div class="avatar"><i>72</i><span>Marc, at 72<br><span class="quiet">speaks only with calculated numbers</span></span></div>
-    <div class="scen"><div><span class="quiet">As now</span><b>${eur(f.scenario_a.extra_per_month_in_retirement)}</b><span class="quiet">extra per month</span></div>
-    <div class="b"><span class="quiet">+ €${EXTRA} saved/month</span><b>${eur(f.scenario_b.extra_per_month_in_retirement)}</b><span class="quiet">extra per month</span></div></div>
+    <div class="scen"><div><span class="quiet">As now</span><b>${eur(aPm)}</b><span class="quiet">extra per month</span></div>
+    <div class="b"><span class="quiet">+ €${EXTRA} saved/month</span><b>${eur(bPm)}</b><span class="quiet">extra per month</span></div></div>
     <div class="bubble">${esc(txt)}</div>
     <p class="quiet">A projection, not advice. Assumptions: retirement at ${PENSIOEN}, ${REND*100}% return, capital spread over ${JAREN_UIT} years.</p>
     <div class="card"><span class="eyebrow">From insight to agreement</span><p>Turn what your future self wants into rules Kate follows.</p>
     <div class="row"><button class="btn" id="toMandate">Create my Life Mandate</button></div></div>`;
   $("#toMandate").onclick=()=>go("mandate");
   box.innerHTML=`<p class="lead">The language model speaks, but it only receives these facts. Every number in its answer is checked.</p>
-  <div class="trace" style="border:0;padding:0"><h3>Input for the language model (only source)</h3><div class="ln">${esc(JSON.stringify(f,null,2))}</div></div>
+  <div class="trace" style="border:0;padding:0"><h3>Input for the language model (only source)</h3><div class="ln">${esc(JSON.stringify(E?E.future.feiten:f,null,2))}</div></div>
   <div class="trace"><h3>Number check on the output</h3><div>${nums.map(n=>`<span class="chip ${ok.has(n)?"":"badc"}">${n.toLocaleString("en-GB")} ${ok.has(n)?"✓":"✗"}</span>`).join("")}</div>
-  <div class="ln">${bad.length?'<span class="bad">rejected → safe template shown</span>':'<span class="hi">all '+nums.length+' numbers come from the calculation → shown</span>'}</div>
+  <div class="ln">${bad.length||(E&&E.future.reden)?'<span class="bad">rejected → safe template shown</span>':'<span class="hi">all '+nums.length+' numbers come from the calculation → shown</span>'}</div>
+  ${E?`<div class="ln dim">source: ${esc(E.future.bron)} · computed by engine/future_self.py</div>`:""}
   <div class="ln dim">no products · no funds · fixed system prompt · question max. 300 characters</div></div>`;
 }
 
@@ -403,5 +422,6 @@ function drawWeek(){
   <div class="trace"><div class="ln">A scammer can call Marc, but he cannot get through Marc's mandate.</div><div class="ln dim">audit log: readable for the customer and for compliance</div></div>`;
 }
 
-S.scale=batch(); render();
+function fromEngine(){const counts={};SITUATIONS.forEach((s,i)=>counts[s.naam]=E.scale.counts[i]);return {n:E.scale.n,ms:E.scale.ms,counts}}
+S.scale=E?fromEngine():batch(); render();
 </script>
