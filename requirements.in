@@ -1,0 +1,5 @@
+# Directe runtime-afhankelijkheden. Na een wijziging: zie README (Ontwikkelen) om requirements.txt opnieuw te genereren.
+streamlit==1.64.0
+pandas==3.0.6
+numpy==2.5.3
+google-genai==2.25.0

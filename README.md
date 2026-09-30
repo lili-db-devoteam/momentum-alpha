@@ -49,6 +49,15 @@ Deployen naar Google Cloud Run: zie [DEPLOY.md](DEPLOY.md).
 
 CI (GitHub Actions) draait lint, tests, pip-audit en een Docker-build met healthcheck.
 
+**Afhankelijkheden (lockfile):** de directe pakketten staan in `requirements.in` en `requirements-dev.in`.
+`requirements.txt` en `requirements-dev.txt` zijn lockfiles: alle pakketten, ook onrechtstreekse, vastgepind
+met hashes, voor elk platform. Pas ze nooit met de hand aan; genereer ze opnieuw met [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv pip compile --universal --generate-hashes --python-version 3.14 requirements.in -o requirements.txt
+uv pip compile --universal --generate-hashes --python-version 3.14 -c requirements.txt requirements-dev.in -o requirements-dev.txt
+```
+
 **Een tab toevoegen:** maak `ui/<naam>.py` met `render(ctx: DemoContext) -> None` en zet één regel in
 `ui/registry.py`. De smoke test dekt hem automatisch.
 
