@@ -51,3 +51,16 @@ def test_fullscreen_mode_shows_only_the_demo(monkeypatch):
     at.run()
     assert not at.exception
     assert len(at.tabs) == 0 and len(at.sidebar.select_slider) == 0 and len(at.title) == 0
+
+
+def test_demo_uses_no_raw_html_sinks():
+    """XSS-bescherming (Aikido): HTML gaat enkel via setHTML(el, html`...`), dat elke waarde escapet."""
+    code = re.sub(r"/\*.*?\*/", "", HTML, flags=re.S)
+    for sink in ("innerHTML", "outerHTML", "document.write", "insertAdjacentHTML", "createContextualFragment"):
+        assert sink not in code, f"{sink} gevonden in demo/phone_demo.html"
+    calls = re.findall(r"setHTML\(([^,]+),(.{0,5})", code)
+    assert calls, "setHTML wordt niet gebruikt"
+    for target, arg in calls:
+        if target.strip() == "el":  # de definitie zelf
+            continue
+        assert arg.startswith("html`"), f"setHTML({target}, ...) krijgt geen html`...`-fragment"
