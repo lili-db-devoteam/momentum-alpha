@@ -53,7 +53,7 @@ gcloud run deploy glassbox --source . --region $REGION \
 Waarom deze vlaggen:
 - `--session-affinity` en `--timeout 3600`: Streamlit houdt een WebSocket open per bezoeker.
 - `--max-instances 2`: de globale Gemini-limiet geldt per instantie; zo blijft het plafond 2 × `RATE_GLOBAL_PER_HOUR`.
-- Let op: een Gemini-call die mislukt door een timeout of netwerkfout wordt één keer opnieuw geprobeerd binnen dezelfde limiet-toelating. Reken voor het budget dus met maximaal 2 × RATE_GLOBAL_PER_HOUR calls per instantie per uur.
+- Let op: een Gemini-call die mislukt door een timeout, netwerk- of serverfout wordt één keer opnieuw geprobeerd binnen dezelfde limiet-toelating. Reken voor het budget dus met maximaal 2 × RATE_GLOBAL_PER_HOUR calls per instantie per uur.
 - `--allow-unauthenticated`: publieke demo. Wil je enkel het team toelaten, laat deze vlag weg en gebruik IAP of `gcloud run services proxy`.
 
 Extra vangnet: zet in Google AI Studio (of de Cloud Console) een quotum/budget op de key.

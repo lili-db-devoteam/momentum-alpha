@@ -48,6 +48,7 @@ def test_returns_stripped_text_and_passes_prompts():
     assert (call["model"], call["contents"]) == ("m", "user")
     assert call["config"].system_instruction == "sys"
     assert call["config"].max_output_tokens == 400
+    assert call["config"].thinking_config.thinking_budget == 0
 
 
 def test_none_text_becomes_empty_string():

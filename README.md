@@ -13,11 +13,11 @@ KBC herkent wie je nu bent, handelt binnen jouw regels en bewaakt wie je wordt. 
 | 1 · Bankiersview | Understand + Scale | Een uitlegbaar model (gewogen regels) scoort 10.000 synthetische klanten in milliseconden op levenssituatie. Elke klant krijgt zijn redenen mee. Geen LLM, dus geen LLM-kost voor herkenning. |
 | 2 · App van de klant | Adapt | De homepage toont een kaart die past bij de situatie, met kanaal en toon per situatie. "Waarom zie ik dit?" toont de signalen en gewichten; de klant kan elk signaal uitzetten en ziet de kaart verdwijnen. |
 | 3 · Future Self | Hook | Python berekent twee scenario's. Gemini spreekt als de klant op 72, maar krijgt enkel die cijfers. Een cijfercheck weigert elke output met een getal dat niet uit de berekening komt. Geen productadvies. |
-| 4 · Levensmandaat | Mandaat | Elk besluit krijgt een ontvangstbewijs in een hashketen; "Probeer te knoeien" toont hoe aanpassen meteen opvalt. |
+| 4 · Levensmandaat | Mandaat | De klant keurt eigen regels goed. De agent handelt erbinnen: energiewissel automatisch, grote betaling eerst vragen, nachtelijke overschrijving naar nieuwe begunstigde geblokkeerd, buffer beschermd. Elk besluit krijgt een ontvangstbewijs in een hashketen; "Probeer te knoeien" toont hoe aanpassen meteen opvalt. |
 
 ## Draaien
 
-**Lokaal met Python (3.12+)**
+**Lokaal met Python (3.14, getest)**
 
 ```bash
 python -m venv .venv

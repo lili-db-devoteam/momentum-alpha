@@ -124,11 +124,11 @@ def fallback_text(f: dict) -> str:
     )
 
 
-_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u200b-\u200f\u202a-\u202e\u2066-\u2069]")
 _HTML = re.compile(r"<\s*/?\s*[a-zA-Z][^>]*>")
 _MD_LINK = re.compile(r"!?\[[^\]]*\]\([^)]*\)|!\[")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
-_URL = re.compile(r"https?://|www\.|\b[\w-]+\.(?:com|be|nl|net|org|eu|io|info|biz|app|co|ly|me)\b", re.IGNORECASE)
+_URL = re.compile(r"https?://|www\.|\b[\w-]+(?:\.[\w-]+)*\.[a-z]{2,}\b", re.IGNORECASE)
 _VERBODEN = ((_HTML, "HTML"), (_MD_LINK, "markdown-link"), (_EMAIL, "e-mailadres"), (_URL, "URL"))
 
 

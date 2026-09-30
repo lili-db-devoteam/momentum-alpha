@@ -3,7 +3,8 @@
 Elk ontvangstbewijs bevat de hash van het vorige. Wie achteraf één veld aanpast,
 een bewijs weghaalt of de volgorde wijzigt, breekt de keten, en verify() wijst
 aan waar. Beperking: het weglaten van het laatste bewijs is met een keten
-alleen niet te zien.
+alleen niet te zien. De hash is ongesleuteld: wie het hele log kan herschrijven, kan de
+keten opnieuw berekenen; in productie moet het anker (de laatste hash) extern bewaard worden.
 """
 from __future__ import annotations
 
