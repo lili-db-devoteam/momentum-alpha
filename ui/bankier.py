@@ -9,13 +9,17 @@ from engine.model import GEEN_SITUATIE, SITUATION_BY_NAME, THRESHOLD, reasons_te
 from ui.context import DemoContext
 from ui.format import num
 
+KBC_KLANTEN = 2_300_000
+
 
 def render(ctx: DemoContext) -> None:
     data = ctx.data
     st.subheader("Understand + Scale: één uitlegbaar model over alle klanten")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Klanten gescoord", num(len(data)))
-    c2.metric("Doorlooptijd", f"{ctx.score_secs * 1000:.0f} ms")
+    kbc_secs = ctx.score_secs / max(len(data), 1) * KBC_KLANTEN
+    c2.metric("Doorlooptijd", f"{ctx.score_secs * 1000:.0f} ms", help="Lineaire extrapolatie van deze meting.")
+    c2.caption(f"all 2.3M KBC customers ≈ {kbc_secs:.1f} s")
     c3.metric("Met een levenssituatie", f"{(data.situatie != GEEN_SITUATIE).mean():.0%}")
     c4.metric("LLM-kost voor herkenning", "€0", help="Herkenning gebeurt met regels en gewichten, zonder LLM.")
 

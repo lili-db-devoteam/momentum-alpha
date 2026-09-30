@@ -1,4 +1,4 @@
-"""Glass Box Banking — Tectonic Hackathon, KBC-track.
+"""Kate Forward — Tectonic Hackathon, KBC-track.
 
 Start: streamlit run app.py
 """
@@ -18,7 +18,7 @@ from ui.context import DemoContext
 from ui.registry import TABS
 
 DEMO_MODE = "demo" in st.query_params  # ?demo=1: enkel de telefoon + glass box, zonder zijbalk en tabs
-st.set_page_config(page_title="Glass Box Banking", page_icon="🔍", layout="wide",
+st.set_page_config(page_title="Kate Forward", page_icon="🔍", layout="wide",
                    initial_sidebar_state="collapsed" if DEMO_MODE else "auto")
 
 
@@ -61,9 +61,9 @@ except ConfigError as exc:
     st.stop()
 
 if not DEMO_MODE:
-    st.title("Glass Box Banking")
-    st.caption("KBC herkent wie je nu bent, handelt binnen jouw regels en bewaakt wie je wordt. En legt altijd uit waarom. "
-               "· Synthetische data, geen echte klanten.")
+    st.title("Kate Forward")
+    st.caption("Kate Forward turns KBC from a bank that reacts into a partner that looks ahead: it understands your life now, "
+               "acts within rules you set, and helps build who you're becoming. · Synthetic data, no real customers.")
 
 n = 10_000 if DEMO_MODE else st.sidebar.select_slider("Aantal synthetische klanten", [1_000, 10_000, 100_000], value=10_000, key="aantal")
 data, secs = load(n)
@@ -75,7 +75,7 @@ else:
     voorbeelden = {"Marc (58)": MARC_ID}
     for sit in SITUATION_BY_NAME:
         ids = data.loc[data.situatie == sit, "klant_id"]
-        if len(ids) and sit != "Pensioen in zicht":
+        if len(ids) and sit != "Retirement in sight":
             voorbeelden[f"Voorbeeld: {sit}"] = ids.iloc[0]
     keuze = st.sidebar.selectbox("Klant", list(voorbeelden), key="klant", label_visibility="collapsed")
     keuze_id = voorbeelden[keuze]

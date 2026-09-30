@@ -78,6 +78,10 @@ def generate_customers(n: int = 10_000, seed: int = 42) -> pd.DataFrame:
     df.loc[fraud, "nieuwe_begunstigde_groot"] = True
     df.loc[fraud, "nachtelijke_tx"] = rng.random(len(fraud)) < 0.7
 
+    # Hospitalisatieverzekering via de werkgever: ~70% van wie werkt (loon > 2200, jonger dan 67).
+    # Na de andere trekkingen, zodat de bestaande kolommen identiek blijven.
+    df["hospital_cover_via_employer"] = (income > 2200) & (age < 67) & (rng.random(n) < 0.7)
+
     # Marc, onze demopersona, altijd op een vaste plaats.
     marc = {
         "klant_id": MARC_ID, "leeftijd": 58, "inkomen_pm": 3900, "uitgaven_pm": 3150,
@@ -86,6 +90,7 @@ def generate_customers(n: int = 10_000, seed: int = 42) -> pd.DataFrame:
         "verhuisfirma": False, "nieuw_energiecontract": False, "eerste_loon": False,
         "babywinkel_pm": 0.0, "groeipakket": False, "nieuwe_begunstigde_groot": False,
         "nachtelijke_tx": False, "pensioensparen_actief": False,
+        "hospital_cover_via_employer": True,
     }
     df.loc[58] = pd.Series(marc)
     df["naam"] = ""

@@ -31,7 +31,7 @@ def test_all_tabs_render_for_marc(at):
     assert [t.label for t in at.tabs] == [label for label, _ in TABS]
 
 
-@pytest.mark.parametrize("keuze", ["Voorbeeld: Terug van reis", "Voorbeeld: Fraudegevoelig moment", "Voorbeeld: Jonge ouder"])
+@pytest.mark.parametrize("keuze", ["Voorbeeld: Back from a trip", "Voorbeeld: Fraud-sensitive moment", "Voorbeeld: Young parent"])
 def test_all_tabs_render_for_example_customer(at, keuze):
     at.selectbox(key="klant").set_value(keuze).run()
     assert not at.exception
@@ -56,7 +56,7 @@ def test_agent_log_verifies(at):
 def test_tamper_demo_breaks_and_restores_chain(at):
     _run_agent(at)
     at.button(key="knoei").click().run()
-    assert any("Keten gebroken bij ontvangstbewijs #3" in e.value for e in at.error)
+    assert any("Keten gebroken bij ontvangstbewijs #4" in e.value for e in at.error)
     at.button(key="herstel").click().run()
     assert any("Keten geverifieerd" in s.value for s in at.success)
     assert not any("Keten gebroken" in e.value for e in at.error)
@@ -64,21 +64,21 @@ def test_tamper_demo_breaks_and_restores_chain(at):
 
 def test_receipts_are_per_customer(at):
     _run_agent(at)
-    at.selectbox(key="klant").set_value("Voorbeeld: Terug van reis").run()
+    at.selectbox(key="klant").set_value("Voorbeeld: Back from a trip").run()
     assert not any("Keten geverifieerd" in s.value for s in at.success)
 
 
 def test_future_self_without_key_shows_safe_template(at):
     at.button(key="fs_praat").click().run()
     assert not at.exception
-    assert "Hey, ik ben jij, op 72" in at.chat_message[0].markdown[0].value
+    assert "Hey, it's you, at 72" in at.chat_message[0].markdown[0].value
     assert any("Cijfercheck OK" in s.value for s in at.success)
 
 
 def test_future_self_answer_is_per_customer(at):
     at.button(key="fs_praat").click().run()
     assert len(at.chat_message) == 1
-    at.selectbox(key="klant").set_value("Voorbeeld: Terug van reis").run()
+    at.selectbox(key="klant").set_value("Voorbeeld: Back from a trip").run()
     assert len(at.chat_message) == 0
 
 

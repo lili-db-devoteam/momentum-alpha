@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
-UITGEVOERD = "Uitgevoerd"
-VRAAG = "Vraagt eerst toestemming"
-GEBLOKKEERD = "Geblokkeerd"
+UITGEVOERD = "Executed"
+VRAAG = "Asks first"
+GEBLOKKEERD = "Blocked"
 SOORTEN = ("energie", "betaling", "overschrijving_spaargeld")
 
 
@@ -30,12 +30,12 @@ class Mandaat:
 
     def regels(self) -> list[str]:
         r = [
-            f"Mijn noodbuffer zakt nooit onder {self.buffer_maanden_min} maanden uitgaven.",
-            f"Alles boven €{self.vraag_boven} vraag je eerst.",
-            f"Stap over naar goedkopere energie als ik meer dan €{self.energie_auto_besparing} per jaar bespaar.",
+            f"My emergency buffer never drops below {self.buffer_maanden_min} months of expenses.",
+            f"Anything above €{self.vraag_boven}: ask me first.",
+            f"Switch to cheaper energy if I save more than €{self.energie_auto_besparing} a year.",
         ]
         if self.blokkeer_nieuwe_begunstigde_nacht:
-            r.append("Een groot bedrag 's nachts naar een nieuwe begunstigde: altijd blokkeren en mij bellen.")
+            r.append("A large amount at night to a new payee: always block it and call me.")
         return r
 
 
@@ -60,12 +60,13 @@ class Actie:
 
 
 DEMO_ACTIES: tuple[Actie, ...] = (
-    Actie("A1", "Energie-agent biedt een contract aan dat €140 per jaar goedkoper is", "energie", 0, besparing_per_jaar=140,
-          context="Onderhandeld door je agent met de agent van de leverancier."),
-    Actie("A2", "Betaling van €600 aan Garage Janssens (bekende begunstigde)", "betaling", 600, uur=10),
-    Actie("A3", "Overschrijving van €2.400 naar een nieuwe begunstigde, om 23u10", "betaling", 2400,
-          nieuwe_begunstigde=True, uur=23, context="Kort na een telefoontje van iemand die zei van 'de veiligheidsdienst' te zijn."),
-    Actie("A4", "€35.000 van je spaarrekening naar een beleggingsrekening", "overschrijving_spaargeld", 35_000, uur=11),
+    Actie("A1", "Energy agent: a contract that is €140 a year cheaper", "energie", 0, besparing_per_jaar=140, uur=10,
+          context="Negotiated by your agent with the supplier's agent."),
+    Actie("A2", "Payment of €600 to Garage Janssens", "betaling", 600, uur=11, context="Known payee."),
+    Actie("A4", "€35,000 from savings to an investment account", "overschrijving_spaargeld", 35_000, uur=14,
+          context="Requested through a link in a text message."),
+    Actie("A3", "€2,400 to a new payee, at 23:10", "betaling", 2400, nieuwe_begunstigde=True, uur=23,
+          context="Right after a call from someone claiming to be 'the security team'."),
 )
 
 
@@ -76,21 +77,21 @@ def is_nacht(uur: int) -> bool:
 def beslis(actie: Actie, mandaat: Mandaat, saldo: float, uitgaven_pm: float) -> dict:
     if (mandaat.blokkeer_nieuwe_begunstigde_nacht and actie.nieuwe_begunstigde and is_nacht(actie.uur)
             and actie.bedrag > mandaat.vraag_boven):
-        besl, regel, waarom = GEBLOKKEERD, 4, "Groot bedrag, nieuwe begunstigde, 's nachts. Kate belt je om te checken."
+        besl, regel, waarom = GEBLOKKEERD, 4, "Large amount, new payee, at night. Kate is calling you."
     elif actie.soort == "overschrijving_spaargeld" and (saldo - actie.bedrag) < mandaat.buffer_maanden_min * uitgaven_pm:
         rest = round((saldo - actie.bedrag) / max(uitgaven_pm, 1), 1)
         besl, regel = GEBLOKKEERD, 1
-        waarom = f"Na deze actie heb je nog maar {rest} maanden buffer; je minimum is {mandaat.buffer_maanden_min}."
+        waarom = f"After this, only {rest} months of buffer left; your minimum is {mandaat.buffer_maanden_min}."
     elif actie.soort == "energie":
         if actie.besparing_per_jaar > mandaat.energie_auto_besparing:
             besl, regel = UITGEVOERD, 3
-            waarom = f"Besparing €{actie.besparing_per_jaar:.0f} is meer dan je grens van €{mandaat.energie_auto_besparing}."
+            waarom = f"Saving of €{actie.besparing_per_jaar:.0f} is above your limit of €{mandaat.energie_auto_besparing}."
         else:
-            besl, regel, waarom = VRAAG, 3, "Besparing is te klein om automatisch over te stappen."
+            besl, regel, waarom = VRAAG, 3, "Saving too small to switch automatically."
     elif actie.bedrag > mandaat.vraag_boven:
-        besl, regel, waarom = VRAAG, 2, f"€{actie.bedrag:,.0f} is meer dan je grens van €{mandaat.vraag_boven}.".replace(",", ".")
+        besl, regel, waarom = VRAAG, 2, f"€{actie.bedrag:,.0f} is above your limit of €{mandaat.vraag_boven}."
     else:
-        besl, regel, waarom = UITGEVOERD, 2, f"Onder je grens van €{mandaat.vraag_boven}."
+        besl, regel, waarom = UITGEVOERD, 2, f"Below your limit of €{mandaat.vraag_boven}."
 
     return {
         "actie": actie.id,

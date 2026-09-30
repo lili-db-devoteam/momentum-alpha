@@ -13,7 +13,7 @@ import pandas as pd
 from engine import mandate as M
 from engine.model import SITUATION_BY_NAME, SITUATIONS, explain
 
-PENSIOEN = "Pensioen in zicht"
+PENSIOEN = "Retirement in sight"
 CODE = {M.UITGEVOERD: "ok", M.VRAAG: "ask", M.GEBLOKKEERD: "block"}
 ENERGIE = range(25, 501, 25)
 VRAGEN = range(100, 5001, 100)
@@ -22,7 +22,7 @@ ACTIES = {a.id: a for a in M.DEMO_ACTIES}
 
 
 def trace_tables(row: pd.Series) -> dict:
-    """Uitleg van 'Pensioen in zicht' voor elke combinatie van uitgezette signalen (sleutel: gesorteerd, met komma's)."""
+    """Uitleg van de situatie PENSIOEN voor elke combinatie van uitgezette signalen (sleutel: gesorteerd, met komma's)."""
     keys = sorted(s.key for s in SITUATION_BY_NAME[PENSIOEN].signalen)
     out = {}
     for r in range(len(keys) + 1):
