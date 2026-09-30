@@ -1,117 +1,157 @@
 # Kate Forward
 
-**Tectonic Hackathon 2026 · KBC-challenge**
+**Tectonic Hackathon 2026 · KBC challenge**
 
 > Kate Forward turns KBC from a bank that reacts into a partner that looks ahead: it understands your life now, acts within rules you set, and helps build who you're becoming.
 
-## Hoofddemo: `web/index.html`
+Every AI will soon know what you want today. Only KBC can fight for who you become. Kate Forward is a proof of concept for that idea, built around one principle: **the model decides, the LLM only words it.** Everything the customer sees can be explained ("Why am I seeing this?") and every automated decision leaves a tamper-evident receipt.
 
-De demo voor de pitch is één HTML-bestand: **open `web/index.html` in Chrome** (geen server nodig).
-Links de telefoon van de klant, rechts de glass box, bovenaan de 4 stappen van het verhaal.
+All data is synthetic. No real KBC systems or customer data are involved.
 
-**Autoplay:** sleep `part1.mp3`, `future.mp3`, `part2.mp3` (ElevenLabs-voice-over) en `aikido-before.png`,
-`aikido-after.png` op de pagina en druk op **P**. **Esc** herlaadt.
+## See the demo in 30 seconds
 
-De webdemo spiegelt de Python-engine in JavaScript: dezelfde regels, gewichten, drempel (0.65), formules en
-mandaat. De Python-engine met Streamlit hieronder is de referentie-implementatie aan de backend-kant, met een
-echte Gemini-call en cijfercheck. Wijzig je een regel, pas hem dan in beide aan.
+You need nothing installed except a browser.
 
-## Wat het doet
+```bash
+git clone https://github.com/lili-db-devoteam/momentum-alpha.git
+cd momentum-alpha
+open web/index.html        # macOS. Linux: xdg-open · Windows: start web/index.html
+```
 
-| Tab | Laag | Wat |
+Or just double-click `web/index.html`. Chrome is recommended.
+
+`web/index.html` is the pitch demo, a single self-contained HTML file with no server. The layout:
+
+- **Left:** the customer's phone, showing what Marc (58) sees in his KBC app.
+- **Right:** the "glass box", showing why: the signals, their weights, the projection and every mandate decision.
+- **Top:** the four steps of the story (Understand, Adapt, Hook, Mandate).
+
+Things to try:
+
+1. Follow the four steps at the top from left to right.
+2. Open **Why am I seeing this?** and switch a signal off. The card on the phone disappears.
+3. Ask Future Self (Marc at 72) a question about retirement.
+4. Trigger the mandate decisions: an energy switch goes through automatically, a large payment asks first, a night-time transfer to a new beneficiary is blocked.
+
+Keyboard: **P** starts autoplay, **Esc** reloads the page.
+For autoplay with voice-over, drag `part1.mp3`, `future.mp3`, `part2.mp3` and, if you want them shown, `aikido-before.png` and `aikido-after.png` onto the page before pressing **P**. These files are not in the repo.
+
+## Run the full app (Python engine + Streamlit)
+
+The Streamlit app runs the same story on the real Python engine. It adds a real Gemini call with a number check, the full hash-chained audit log with a tamper demo, and a banker view that scores 10,000 customers.
+
+**Requirements:** Python 3.14 (tested) and optionally a Gemini API key. Without a key everything works and Future Self uses a safe template instead.
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt     # Windows: .venv\Scripts\python
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml   # optional: fill in GEMINI_API_KEY
+.venv/bin/streamlit run app.py
+```
+
+Open http://localhost:8501.
+
+**With Docker instead:**
+
+```bash
+cp .env.example .env         # optional: fill in GEMINI_API_KEY
+docker compose up --build    # http://localhost:8501
+```
+
+**Full-screen demo mode:** open http://localhost:8501/?demo=1 to show only the phone and the glass box, without the sidebar and tabs. This is best for screen recordings.
+
+**Optional voice:** put an ElevenLabs recording at `assets/future_self.mp3` and it plays under the Future Self answer.
+
+### What's in the app
+
+The tab names are in Dutch, like the UI text.
+
+| Tab | Layer | What it does |
 |---|---|---|
-| 1 · Demo: Marc | Alle lagen | Eén scherm: links de telefoon van de klant, rechts de glass box. Situatie, signalen, projectie, cijfercheck en mandaatbeslissingen komen uit de Python-engine; de pagina verwoordt en tekent ze. Schermvullend via `/?demo=1`. |
-| 2 · App van de klant | Adapt | De homepage toont een kaart die past bij de situatie, met kanaal en toon per situatie. "Why am I seeing this?" toont de signalen en gewichten; de klant kan elk signaal uitzetten en ziet de kaart verdwijnen. Een tweede kaart kijkt vooruit: hospitalisatieverzekering via de werkgever stopt bij pensioen. |
-| 3 · Future Self | Hook | Python berekent twee scenario's. Gemini spreekt als de klant op 72, maar krijgt enkel die cijfers. Een cijfercheck weigert elke output met een getal dat niet uit de berekening komt. Geen productadvies. |
-| 4 · Levensmandaat | Mandaat | De klant keurt eigen regels goed. De agent handelt erbinnen: energiewissel automatisch, grote betaling eerst vragen, nachtelijke overschrijving naar nieuwe begunstigde geblokkeerd, buffer beschermd. Elk besluit krijgt een ontvangstbewijs in een hashketen; "Probeer te knoeien" toont hoe aanpassen meteen opvalt. |
+| 1 · Demo: Marc | All layers | One screen: the customer's phone on the left, the glass box on the right. Situation, signals, projection, number check and mandate decisions all come from the Python engine. |
+| 2 · App van de klant | Adapt | The home screen shows a card that fits the customer's situation, with a channel and tone per situation. "Why am I seeing this?" shows the signals and weights, and the customer can switch any signal off and watch the card disappear. A second card looks ahead: employer hospitalisation insurance ends at retirement. |
+| 3 · Future Self | Hook | Python computes two scenarios. Gemini speaks as the customer at 72 but only receives those numbers. A number check rejects any output containing a figure that isn't in the calculation. No product advice. |
+| 4 · Levensmandaat | Mandate | The customer approves their own rules and the agent acts within them: energy switch is automatic, large payment asks first, night-time transfer to a new beneficiary is blocked, buffer is protected. Every decision gets a receipt in a hash chain, and "Probeer te knoeien" (try to tamper) shows that any edit is noticed immediately. |
+| 5 · Bankiersview | Understand + Scale | An explainable model (weighted rules) scores 10,000 synthetic customers in milliseconds on life situation. Each customer comes with their reasons. No LLM, so no LLM cost for recognition. |
 
-## Draaien
+### Two implementations, one set of rules
 
-**Lokaal met Python (3.14, getest)**
+The web demo mirrors the Python engine in JavaScript: same rules, weights, threshold (0.65), formulas and mandate. The Python engine is the reference implementation. If you change a rule, change it in both places.
 
-```bash
-python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements.txt        # macOS/Linux: .venv/bin/python
-cp .streamlit/secrets.toml.example .streamlit/secrets.toml     # optioneel: GEMINI_API_KEY invullen
-.venv/Scripts/streamlit run app.py
-```
+## Configuration
 
-**Met Docker**
+Settings come from environment variables, with `.streamlit/secrets.toml` as a fallback. Environment variables always win. Copy `.env.example` or `.streamlit/secrets.toml.example` for the full list.
 
-```bash
-cp .env.example .env        # optioneel: GEMINI_API_KEY invullen
-docker compose up --build   # http://localhost:8501
-```
+| Variable | Default | Purpose |
+|---|---|---|
+| `GEMINI_API_KEY` | empty | Enables the real Gemini call. Empty means safe template. |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Model used for Future Self. |
+| `GEMINI_TIMEOUT_S` | `15` | Timeout per call. |
+| `RATE_SESSION_MAX` | `5` | Gemini calls per session per window. |
+| `RATE_SESSION_WINDOW_S` | `600` | Window length in seconds. |
+| `RATE_GLOBAL_PER_HOUR` | `60` | Gemini calls per hour for the whole process. |
 
-Zonder API-key werkt alles; Future Self gebruikt dan een veilig sjabloon.
-Optioneel: zet een ElevenLabs-opname in `assets/future_self.mp3`, dan speelt die af onder het antwoord.
-
-Deployen naar Google Cloud Run: zie [DEPLOY.md](DEPLOY.md).
-
-## Ontwikkelen
+## Development
 
 ```bash
-.venv/Scripts/python -m pip install -r requirements-dev.txt
-.venv/Scripts/python -m pytest        # alle tests, offline, zonder key
-.venv/Scripts/ruff check .            # lint
-.venv/Scripts/pip-audit -r requirements.txt
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m pytest          # all tests, offline, no key needed
+.venv/bin/ruff check .              # lint
+.venv/bin/pip-audit -r requirements.txt
 ```
 
-CI (GitHub Actions) draait lint, tests, pip-audit en een Docker-build met healthcheck.
+CI (GitHub Actions) runs lint, tests, pip-audit and a Docker build with a health check.
 
-**Afhankelijkheden (lockfile):** de directe pakketten staan in `requirements.in` en `requirements-dev.in`.
-`requirements.txt` en `requirements-dev.txt` zijn lockfiles: alle pakketten, ook onrechtstreekse, vastgepind
-met hashes, voor elk platform. Pas ze nooit met de hand aan; genereer ze opnieuw met [uv](https://docs.astral.sh/uv/):
+**Dependencies (lockfile):** direct packages are listed in `requirements.in` and `requirements-dev.in`. `requirements.txt` and `requirements-dev.txt` are lockfiles: every package, including indirect ones, pinned with hashes for every platform. Never edit them by hand; regenerate them with [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv pip compile --universal --generate-hashes --python-version 3.14 requirements.in -o requirements.txt
 uv pip compile --universal --generate-hashes --python-version 3.14 -c requirements.txt requirements-dev.in -o requirements-dev.txt
 ```
 
-**Een tab toevoegen:** maak `ui/<naam>.py` met `render(ctx: DemoContext) -> None` en zet één regel in
-`ui/registry.py`. De smoke test dekt hem automatisch.
+**Adding a tab:** create `ui/<name>.py` with `render(ctx: DemoContext) -> None` and add one line to `ui/registry.py`. The smoke test covers it automatically.
 
-## Architectuur
+**Deploying** to Google Cloud Run: see [DEPLOY.md](DEPLOY.md) (written in Dutch).
+
+## Architecture
 
 ```
-app.py                 dunne ingang: instellingen, caches, zijbalk, tabs
-engine/                alle logica, importeert nooit streamlit (afgedwongen door een test)
-  config.py            instellingen uit omgevingsvariabelen, gevalideerd
-  data.py              synthetische klanten (+ Marc, 58)
-  model.py             glass-box model: situaties = signalen met gewicht + uitleg
-  mandate.py           mandaatregels en pure beslissingen
-  audit.py             ontvangstbewijzen als hashketen
-  future_self.py       deterministische projectie, prompt, outputcontrole
-  llm.py               Gemini-wrapper: timeout, één retry, geen geheimen in fouten
-  ratelimit.py         sliding-window limiet per sessie en globaal
-ui/                    één module per tab + registry + weergavehelpers
-tests/                 pytest + Streamlit AppTest
+web/index.html         the pitch demo: one static file, JavaScript mirror of the engine
+app.py                 thin entry point: settings, caches, sidebar, tabs
+engine/                all logic, never imports streamlit (enforced by a test)
+  config.py            settings from environment variables, validated
+  data.py              synthetic customers (plus Marc, 58)
+  model.py             glass-box model: situations = signals with weight + explanation
+  mandate.py           mandate rules and pure decisions
+  audit.py             receipts as a hash chain
+  future_self.py       deterministic projection, prompt, output check
+  llm.py               Gemini wrapper: timeout, one retry, no secrets in errors
+  ratelimit.py         sliding-window limit per session and global
+ui/                    one module per tab, plus registry and display helpers
+tests/                 pytest and Streamlit AppTest
 ```
 
-Principe: **het model beslist, het LLM formuleert alleen.**
+## Security
 
-## Veiligheid
-
-| Risico | Maatregel |
+| Risk | Mitigation |
 |---|---|
-| Iemand verbruikt de Gemini-key via de publieke URL | Max. 5 calls per sessie per 10 min en 60 per uur globaal (instelbaar). Daarna het veilige sjabloon. Zet ook een quotum op de key in Google AI Studio. |
-| Prompt-injectie via de vraag | Vraag max. 300 tekens, stuurtekens verwijderd, enkel als user-bericht; regels en feiten staan in de systeemprompt. |
-| LLM verzint cijfers of plaatst een (phishing)link | Output geweigerd bij een getal dat niet uit de berekening komt, een URL, e-mailadres, markdown-link, HTML, >200 woorden of lege tekst. Getoonde tekst wordt als platte tekst weergegeven. |
-| Audit-log stil aanpassen | Hashketen (SHA-256, vorige hash in elk bewijs). Aanpassen, weghalen of herordenen wordt gedetecteerd. |
-| Key lekt | Enkel via omgevingsvariabelen / `secrets.toml` (beide in `.gitignore` en `.dockerignore`); nooit in logs, `repr` of foutmeldingen. |
-| Container-uitbraak | Docker-image draait als non-root, `no-new-privileges`, geen secrets in de image. |
-| Browser-aanvallen | XSRF-bescherming aan, uploads uit, foutdetails verborgen voor gebruikers. |
+| Someone burns the Gemini key through the public URL | At most 5 calls per session per 10 minutes and 60 per hour globally (configurable), then the safe template. Also set a quota on the key in Google AI Studio. |
+| Prompt injection via the question | Question capped at 300 characters, control characters stripped, sent only as a user message; rules and facts live in the system prompt. |
+| LLM invents numbers or posts a (phishing) link | Output rejected on any number not from the calculation, URL, email address, markdown link, HTML, more than 200 words, or empty text. Shown text is rendered as plain text. |
+| Audit log silently edited | Hash chain (SHA-256, previous hash in every receipt). Editing, removing or reordering is detected. |
+| Key leaks | Only via environment variables or `secrets.toml` (both in `.gitignore` and `.dockerignore`); never in logs, `repr` or error messages. |
+| Container escape | Docker image runs as non-root with `no-new-privileges`; no secrets in the image. |
+| Browser attacks | XSRF protection on, uploads off, error details hidden from users. |
 
-## Eerlijk: wat niet af is
+## What's not finished
 
-- Alle data is synthetisch; er is geen koppeling met echte KBC-systemen.
-- Acties in het mandaat (energie-agent, betalingen) zijn gesimuleerd.
-- In de demo-tab zijn de ontvangstbewijzen korte hashes die in de browser berekend worden. De echte hashketen met knoeidemo staat in tab 4.
-- In de demo-tab spreekt Future Self met Gemini als er een API-key is, anders met het sjabloon; dat staat in de glass box bij "source".
-- Zonder de Python-gegevens (HTML los geopend) valt de demo terug op een JavaScript-kopie van de engine.
-- Het audit-log leeft in de browsersessie; een hashketen alleen kan niet zien dat het *laatste* bewijs is weggelaten. In productie hoort het anker (laatste hash) extern bewaard.
-- De globale limiet geldt per proces; op Cloud Run dus per instantie.
-- De vooruitblik op de hospitalisatieverzekering is één enkele regel; er zijn geen echte polisgegevens.
-- In `web/index.html` zijn de ontvangstbewijzen korte hashes zonder keten; de echte hashketen met knoeidemo staat in Streamlit (tab 4).
-- Aannames in de projectie (pensioen op 67, 3% rendement, 20 uitkeerjaren) zijn demo-waarden, geen advies.
-- Buiten de demo (visie): agent-tot-agent-onderhandeling, collectieve intelligentie, nalatenschapsagent.
+- All data is synthetic; there is no link to real KBC systems.
+- Mandate actions (energy agent, payments) are simulated.
+- In `web/index.html` and in the Streamlit demo tab, receipts are short hashes computed in the browser without a chain. The real hash chain with the tamper demo is in Streamlit tab 4.
+- In the demo tab, Future Self uses Gemini if an API key is set and the template otherwise; the glass box shows which under "source".
+- Opened on its own, the HTML demo falls back to a JavaScript copy of the engine instead of the Python data.
+- The audit log lives in the browser session. A hash chain alone cannot show that the *last* receipt was omitted; in production the anchor (last hash) must be stored externally.
+- The global rate limit is per process, so on Cloud Run it is per instance.
+- The hospitalisation-insurance look-ahead is a single rule; there is no real policy data.
+- Projection assumptions (retirement at 67, 3% return, 20 payout years) are demo values, not advice.
+- Out of scope, part of the vision: agent-to-agent negotiation, collective intelligence, an estate agent.
