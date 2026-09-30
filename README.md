@@ -24,17 +24,16 @@ Or just double-click `web/index.html`. Chrome is recommended.
 
 - **Left:** the customer's phone, showing what Marc (58) sees in his KBC app.
 - **Right:** the "glass box", showing why: the signals, their weights, the projection and every mandate decision.
-- **Top:** the four steps of the story (Understand, Adapt, Hook, Mandate).
+- **Top:** the four steps of the story: 1 · Recognize, 2 · Future Self, 3 · Life Mandate, 4 · Agent acts.
 
 Things to try:
 
-1. Follow the four steps at the top from left to right.
-2. Open **Why am I seeing this?** and switch a signal off. The card on the phone disappears.
-3. Ask Future Self (Marc at 72) a question about retirement.
-4. Trigger the mandate decisions: an energy switch goes through automatically, a large payment asks first, a night-time transfer to a new beneficiary is blocked.
+1. **Recognize:** open **Why am I seeing this?** and switch a signal off. The score drops below the threshold and the card on the phone disappears.
+2. **Future Self:** click **Talk to yourself at 72** to see two retirement scenarios and what they mean for Marc.
+3. **Life Mandate:** set your own rules with the sliders (emergency buffer, ask-first amount, energy switch) and approve them.
+4. **Agent acts:** watch Kate's week. An energy switch goes through automatically, a large payment asks first, and a night-time transfer to a new beneficiary is blocked.
 
-Keyboard: **P** starts autoplay, **Esc** reloads the page.
-For autoplay with voice-over, drag `part1.mp3`, `future.mp3`, `part2.mp3` and, if you want them shown, `aikido-before.png` and `aikido-after.png` onto the page before pressing **P**. These files are not in the repo.
+To ask Future Self a free-text question, use the Streamlit app below (tab 3).
 
 ## Run the full app (Python engine + Streamlit)
 
