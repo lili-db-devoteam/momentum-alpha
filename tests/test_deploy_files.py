@@ -34,6 +34,12 @@ def test_dockerignore_excludes_secrets():
         assert entry in ignored
 
 
+def test_gcloudignore_excludes_secrets():
+    ignored = read(".gcloudignore").splitlines()
+    for entry in (".env", ".streamlit/secrets.toml", ".git", ".venv"):
+        assert entry in ignored
+
+
 def test_env_example_documents_all_keys_without_values():
     lines = [line for line in read(".env.example").splitlines() if line and not line.startswith("#")]
     documented = {line.split("=")[0].lstrip("# ") for line in read(".env.example").splitlines() if "=" in line}

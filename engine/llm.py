@@ -60,7 +60,12 @@ class GeminiClient:
     def generate(self, system: str, user: str) -> str:
         from google.genai import types
 
-        config = types.GenerateContentConfig(system_instruction=system, temperature=0.6, max_output_tokens=400)
+        config = types.GenerateContentConfig(
+            system_instruction=system,
+            temperature=0.6,
+            max_output_tokens=400,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
         category = "onbekend"
         for attempt in range(self._retries + 1):
             try:

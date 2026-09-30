@@ -17,7 +17,7 @@ KBC herkent wie je nu bent, handelt binnen jouw regels en bewaakt wie je wordt. 
 
 ## Draaien
 
-**Lokaal met Python (3.12+)**
+**Lokaal met Python (3.14, getest)**
 
 ```bash
 python -m venv .venv

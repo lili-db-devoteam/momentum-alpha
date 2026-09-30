@@ -63,6 +63,8 @@ def test_accepts_clean_text(facts):
     ("Ga naar https://kbc-veilig.example nu", "URL"),
     ("Surf naar www.kbc-hulp.be", "URL"),
     ("Log in op kbc-veilig.be", "URL"),
+    ("Ga naar kbc-hulp.xyz", "URL"),
+    ("Check veilig.online nu", "URL"),
     ("Je hebt straks 999999 euro", "getal niet uit berekening"),
     ("Met 7% rendement", "getal niet uit berekening"),
 ])
@@ -76,6 +78,7 @@ def test_clean_question():
     assert clean_question("a\x00b\x1bc") == "a b c"
     assert len(clean_question("x" * 1_000)) == MAX_VRAAG
     assert clean_question(None) == ""
+    assert clean_question("a​b‮c") == "a b c"
     assert clean_question("  hoi \n") == "hoi"
 
 
