@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from engine.model import SITUATION_BY_NAME, THRESHOLD, explain
+from engine.model import SITUATION_BY_NAME, THRESHOLD, explain, look_ahead
 from ui.context import DemoContext
 from ui.format import eur
 
@@ -48,4 +48,13 @@ def render(ctx: DemoContext) -> None:
                     st.caption(f"Score {ex['score']:.2f} (drempel {THRESHOLD}). Berekend met regels, niet met een black box.")
         elif ex:
             st.success(f"Je zette signalen uit: score {ex['score']:.2f} is onder de drempel. Kate toont deze kaart niet meer.")
+        for tip in look_ahead(klant):
+            with st.container(border=True):
+                st.caption("KATE'S TIPS · LOOKING AHEAD")
+                st.markdown(f"### {tip['title']}")
+                st.write(tip["text"])
+                st.caption(f"Source: {tip['source']}")
+                with st.expander("Why am I seeing this?"):
+                    for reason in tip["reasons"]:
+                        st.markdown(f"- `{reason}`")
         st.caption("Recente verrichtingen · Kaarten · Sparen")

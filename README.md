@@ -1,17 +1,27 @@
-# Glass Box Banking
+# Kate Forward
 
 **Tectonic Hackathon 2026 · KBC-challenge**
 
-> Iedere AI weet straks wat je vandaag wil. Alleen KBC kan vechten voor wie je wordt.
+> Kate Forward turns KBC from a bank that reacts into a partner that looks ahead: it understands your life now, acts within rules you set, and helps build who you're becoming.
 
-KBC herkent wie je nu bent, handelt binnen jouw regels en bewaakt wie je wordt. En legt altijd uit waarom.
+## Hoofddemo: `web/index.html`
+
+De demo voor de pitch is één HTML-bestand: **open `web/index.html` in Chrome** (geen server nodig).
+Links de telefoon van de klant, rechts de glass box, bovenaan de 4 stappen van het verhaal.
+
+**Autoplay:** sleep `part1.mp3`, `future.mp3`, `part2.mp3` (ElevenLabs-voice-over) en `aikido-before.png`,
+`aikido-after.png` op de pagina en druk op **P**. **Esc** herlaadt.
+
+De webdemo spiegelt de Python-engine in JavaScript: dezelfde regels, gewichten, drempel (0.65), formules en
+mandaat. De Python-engine met Streamlit hieronder is de referentie-implementatie aan de backend-kant, met een
+echte Gemini-call en cijfercheck. Wijzig je een regel, pas hem dan in beide aan.
 
 ## Wat het doet
 
 | Tab | Laag | Wat |
 |---|---|---|
 | 1 · Demo: Marc | Alle lagen | Eén scherm: links de telefoon van de klant, rechts de glass box. Situatie, signalen, projectie, cijfercheck en mandaatbeslissingen komen uit de Python-engine; de pagina verwoordt en tekent ze. Schermvullend via `/?demo=1`. |
-| 2 · App van de klant | Adapt | De homepage toont een kaart die past bij de situatie, met kanaal en toon per situatie. "Waarom zie ik dit?" toont de signalen en gewichten; de klant kan elk signaal uitzetten en ziet de kaart verdwijnen. |
+| 2 · App van de klant | Adapt | De homepage toont een kaart die past bij de situatie, met kanaal en toon per situatie. "Why am I seeing this?" toont de signalen en gewichten; de klant kan elk signaal uitzetten en ziet de kaart verdwijnen. Een tweede kaart kijkt vooruit: hospitalisatieverzekering via de werkgever stopt bij pensioen. |
 | 3 · Future Self | Hook | Python berekent twee scenario's. Gemini spreekt als de klant op 72, maar krijgt enkel die cijfers. Een cijfercheck weigert elke output met een getal dat niet uit de berekening komt. Geen productadvies. |
 | 4 · Levensmandaat | Mandaat | De klant keurt eigen regels goed. De agent handelt erbinnen: energiewissel automatisch, grote betaling eerst vragen, nachtelijke overschrijving naar nieuwe begunstigde geblokkeerd, buffer beschermd. Elk besluit krijgt een ontvangstbewijs in een hashketen; "Probeer te knoeien" toont hoe aanpassen meteen opvalt. |
 
@@ -97,9 +107,11 @@ Principe: **het model beslist, het LLM formuleert alleen.**
 - Alle data is synthetisch; er is geen koppeling met echte KBC-systemen.
 - Acties in het mandaat (energie-agent, betalingen) zijn gesimuleerd.
 - In de demo-tab zijn de ontvangstbewijzen korte hashes die in de browser berekend worden. De echte hashketen met knoeidemo staat in tab 4.
-- In de demo-tab spreekt Future Self met Gemini als er een API-key is, anders met het sjabloon; dat staat in de glass box bij "source". De tekst is Nederlands, de rest van de demo Engels.
+- In de demo-tab spreekt Future Self met Gemini als er een API-key is, anders met het sjabloon; dat staat in de glass box bij "source".
 - Zonder de Python-gegevens (HTML los geopend) valt de demo terug op een JavaScript-kopie van de engine.
 - Het audit-log leeft in de browsersessie; een hashketen alleen kan niet zien dat het *laatste* bewijs is weggelaten. In productie hoort het anker (laatste hash) extern bewaard.
 - De globale limiet geldt per proces; op Cloud Run dus per instantie.
+- De vooruitblik op de hospitalisatieverzekering is één enkele regel; er zijn geen echte polisgegevens.
+- In `web/index.html` zijn de ontvangstbewijzen korte hashes zonder keten; de echte hashketen met knoeidemo staat in Streamlit (tab 4).
 - Aannames in de projectie (pensioen op 67, 3% rendement, 20 uitkeerjaren) zijn demo-waarden, geen advies.
 - Buiten de demo (visie): agent-tot-agent-onderhandeling, collectieve intelligentie, nalatenschapsagent.

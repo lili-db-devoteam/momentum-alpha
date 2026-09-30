@@ -13,8 +13,10 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-THRESHOLD = 0.6
-GEEN_SITUATIE = "Geen bijzondere situatie"
+from engine.future_self import PENSIOENLEEFTIJD
+
+THRESHOLD = 0.65
+GEEN_SITUATIE = "No specific situation"
 
 
 @dataclass(frozen=True)
@@ -37,73 +39,73 @@ class Situation:
 
 SITUATIONS: tuple[Situation, ...] = (
     Situation(
-        "Pensioen in zicht",
+        "Retirement in sight",
         (
-            Signal("leeftijd_55", 0.35, "Je bent tussen 55 en 66", lambda d: d.leeftijd.between(55, 66)),
-            Signal("nog_werkend", 0.25, "Je ontvangt nog een loon", lambda d: (d.leeftijd < 67) & (d.inkomen_pm > 2200)),
-            Signal("geen_pensioensparen", 0.25, "Je doet nog niet aan pensioensparen", lambda d: ~d.pensioensparen_actief.astype(bool)),
-            Signal("laag_spaarritme", 0.15, "Je spaart minder dan 5% van je inkomen", lambda d: d.spaart_pm < 0.05 * d.inkomen_pm),
+            Signal("age_55_66", 0.35, "Aged between 55 and 66", lambda d: d.leeftijd.between(55, 66)),
+            Signal("still_working", 0.25, "Still receiving a salary", lambda d: (d.leeftijd < 67) & (d.inkomen_pm > 2200)),
+            Signal("no_pension_savings", 0.25, "No pension savings yet", lambda d: ~d.pensioensparen_actief.astype(bool)),
+            Signal("low_savings_rate", 0.15, "Saves less than 5% of income", lambda d: d.spaart_pm < 0.05 * d.inkomen_pm),
         ),
-        "{naam}je pensioen komt in zicht.",
-        "Bekijk in twee minuten wat je nog kan doen, en praat met je toekomstige zelf.",
-        "App + Kate met stem", "Rustig, concreet, geen jargon",
+        "{naam}your retirement is in sight.",
+        "See in two minutes what you can still do, and talk to yourself at 72.",
+        "KBC Mobile + Kate with voice", "Calm, concrete, no jargon",
     ),
     Situation(
-        "Terug van reis",
+        "Back from a trip",
         (
-            Signal("buitenland", 0.5, "Veel kaartbetalingen in het buitenland deze maand", lambda d: d.buitenland_tx_30d >= 5),
-            Signal("gestopt", 0.3, "De buitenlandse betalingen zijn gestopt: je bent terug", lambda d: d.buitenland_gestopt.astype(bool)),
-            Signal("restaurant", 0.2, "Restaurants kostten meer dan het dubbele van normaal", lambda d: d.restaurant_ratio >= 2),
+            Signal("buitenland", 0.5, "Many card payments abroad", lambda d: d.buitenland_tx_30d >= 5),
+            Signal("gestopt", 0.3, "Payments abroad have stopped", lambda d: d.buitenland_gestopt.astype(bool)),
+            Signal("restaurant", 0.2, "Restaurants more than twice the usual", lambda d: d.restaurant_ratio >= 2),
         ),
-        "{naam}terug van reis?",
-        "Verdeel je reisbetalingen met je vrienden in één tik.",
-        "App-melding", "Kort, één tik",
+        "{naam}back from your trip?",
+        "Split your trip expenses with friends in one tap.",
+        "App notification", "Short, one tap",
     ),
     Situation(
-        "Verhuizer",
+        "Moving house",
         (
-            Signal("waarborg", 0.5, "Je betaalde een huurwaarborg", lambda d: d.huurwaarborg.astype(bool)),
-            Signal("verhuisfirma", 0.3, "Je betaalde een verhuisfirma", lambda d: d.verhuisfirma.astype(bool)),
-            Signal("energie", 0.2, "Je hebt een nieuw energiecontract", lambda d: d.nieuw_energiecontract.astype(bool)),
+            Signal("waarborg", 0.5, "Paid a rental deposit", lambda d: d.huurwaarborg.astype(bool)),
+            Signal("verhuisfirma", 0.3, "Paid a moving company", lambda d: d.verhuisfirma.astype(bool)),
+            Signal("energie", 0.2, "New energy contract", lambda d: d.nieuw_energiecontract.astype(bool)),
         ),
-        "{naam}je verhuist?",
-        "Eén checklist: adres overal aanpassen, woningverzekering, lening.",
-        "App + e-mail", "Praktisch, checklist",
+        "{naam}moving house?",
+        "One checklist: update your address everywhere, home insurance, loan.",
+        "App + e-mail", "Practical, checklist",
     ),
     Situation(
-        "Eerste loon",
+        "First salary",
         (
-            Signal("eerste_loon", 0.6, "Je ontving je eerste loon van een werkgever", lambda d: d.eerste_loon.astype(bool)),
-            Signal("jong", 0.2, "Je bent 27 of jonger", lambda d: d.leeftijd <= 27),
-            Signal("geen_buffer", 0.2, "Je hebt nog geen buffer van één maand", lambda d: d.spaargeld < d.uitgaven_pm),
+            Signal("eerste_loon", 0.6, "First salary from an employer", lambda d: d.eerste_loon.astype(bool)),
+            Signal("jong", 0.2, "27 or younger", lambda d: d.leeftijd <= 27),
+            Signal("geen_buffer", 0.2, "No one-month buffer yet", lambda d: d.spaargeld < d.uitgaven_pm),
         ),
-        "{naam}proficiat met je eerste loon!",
-        "Zet in drie stappen een buffer en een budget op.",
-        "App-melding", "Kort, positief",
+        "{naam}congratulations on your first salary!",
+        "Set up a buffer and a budget in three steps.",
+        "App notification", "Short, positive",
     ),
     Situation(
-        "Jonge ouder",
+        "Young parent",
         (
-            Signal("babywinkel", 0.5, "Nieuwe uitgaven bij babywinkels", lambda d: d.babywinkel_pm > 100),
-            Signal("groeipakket", 0.4, "Je ontvangt een groeipakket", lambda d: d.groeipakket.astype(bool)),
-            Signal("leeftijd", 0.1, "Je bent tussen 24 en 42", lambda d: d.leeftijd.between(24, 42)),
+            Signal("babywinkel", 0.5, "Spending at baby stores", lambda d: d.babywinkel_pm > 100),
+            Signal("groeipakket", 0.4, "Receives child benefit", lambda d: d.groeipakket.astype(bool)),
+            Signal("leeftijd", 0.1, "Between 24 and 42", lambda d: d.leeftijd.between(24, 42)),
         ),
-        "{naam}welkom aan je kleine!",
-        "Wat verandert er nu voor je budget, verzekering en sparen?",
-        "App + e-mail", "Warm, overzichtelijk",
+        "{naam}welcome to your little one!",
+        "What changes now for your budget, insurance and savings?",
+        "App + e-mail", "Warm, clear",
     ),
     Situation(
-        "Fraudegevoelig moment",
+        "Fraud-sensitive moment",
         (
-            Signal("senior", 0.3, "Je bent 65 of ouder", lambda d: d.leeftijd >= 65),
+            Signal("senior", 0.3, "65 or older", lambda d: d.leeftijd >= 65),
             Signal(
-                "nieuwe_begunstigde", 0.5, "Groot bedrag naar een nieuwe begunstigde", lambda d: d.nieuwe_begunstigde_groot.astype(bool)
+                "nieuwe_begunstigde", 0.5, "Large amount to a new payee", lambda d: d.nieuwe_begunstigde_groot.astype(bool)
             ),
-            Signal("nacht", 0.2, "Op een ongewoon uur", lambda d: d.nachtelijke_tx.astype(bool)),
+            Signal("nacht", 0.2, "At an unusual hour", lambda d: d.nachtelijke_tx.astype(bool)),
         ),
-        "{naam}even checken.",
-        "Heeft iemand je gevraagd dit te doen? Een bank vraagt dat nooit.",
-        "Kate met stem, vóór de betaling", "Rustig, beschermend",
+        "{naam}quick check.",
+        "Did someone ask you to do this? A bank never asks that.",
+        "Kate with voice, before the payment", "Calm, protective",
     ),
 )
 
@@ -144,6 +146,28 @@ def explain(row: pd.Series, situatie: str, uitgezet: frozenset[str] = frozenset(
                         "actief": actief, "uitgezet": sig.key in uitgezet})
     return {"situatie": situatie, "score": round(score, 2), "toon_kaart": score >= THRESHOLD,
             "redenen": redenen}
+
+
+LOOK_AHEAD_YEARS = 10  # hoe ver vooruit Kate kijkt
+
+
+def look_ahead(row: pd.Series) -> list[dict]:
+    """Tips die nu al tellen voor later. Eén regel: hospitalisatieverzekering via de werkgever stopt bij pensioen.
+
+    Geen premiecijfers: we hebben geen geverifieerde bron, dus enkel "rise sharply".
+    """
+    years = PENSIOENLEEFTIJD - int(row["leeftijd"])
+    if not (bool(row.get("hospital_cover_via_employer", False)) and 0 <= years <= LOOK_AHEAD_YEARS):
+        return []
+    naam = row.get("naam") or ""
+    title = f"{naam}, one more thing for later: your hospital cover." if naam else "One more thing for later: your hospital cover."
+    return [{
+        "title": title,
+        "text": "Your hospital insurance comes with your job and stops when you retire. "
+                "Premiums can then rise sharply. Preparing early costs less.",
+        "source": "KBC Verzekeringen",
+        "reasons": ["hospital_cover_via_employer = true", f"years_to_retirement = {years} (≤ {LOOK_AHEAD_YEARS})"],
+    }]
 
 
 def reasons_text(row: pd.Series, situatie: str) -> str:

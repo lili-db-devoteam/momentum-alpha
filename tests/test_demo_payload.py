@@ -39,8 +39,8 @@ def test_trace_covers_every_switch_combination_and_matches_explain():
     assert tr[""]["show"] is True and tr[""]["score"] == 1.0
     all_off = ",".join(sorted(tr[""]["on"]))
     assert tr[all_off]["show"] is False and tr[all_off]["score"] == 0.0
-    ex = explain(marc, "Pensioen in zicht", frozenset({"leeftijd_55"}))
-    assert tr["leeftijd_55"]["score"] == ex["score"]
+    ex = explain(marc, "Retirement in sight", frozenset({"age_55_66"}))
+    assert tr["age_55_66"]["score"] == ex["score"]
 
 
 def test_scale_payload_counts_follow_situation_order():

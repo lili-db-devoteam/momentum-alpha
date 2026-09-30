@@ -78,3 +78,11 @@ def test_invalid_action_rejected(kwargs):
     base = {"id": "X", "omschrijving": "t", "soort": "betaling", "bedrag": 10}
     with pytest.raises(ValueError):
         Actie(**{**base, **kwargs})
+
+
+def test_demo_actions_follow_web_demo_order_and_english_texts():
+    assert [a.id for a in DEMO_ACTIES] == ["A1", "A2", "A4", "A3"]
+    assert actie("A3").omschrijving == "€2,400 to a new payee, at 23:10"
+    assert actie("A4").context == "Requested through a link in a text message."
+    assert (UITGEVOERD, VRAAG, GEBLOKKEERD) == ("Executed", "Asks first", "Blocked")
+    assert M.regels()[1] == "Anything above €500: ask me first."

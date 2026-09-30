@@ -10,14 +10,14 @@ from ui.context import DemoContext
 
 ICOON = {UITGEVOERD: "✅", GEBLOKKEERD: "⛔"}
 ACTIES = {a.id: a for a in DEMO_ACTIES}
-TE_KNOEIEN = 2  # A3, de verdachte nachtelijke overschrijving
+TE_KNOEIEN = 3  # A3, de verdachte nachtelijke overschrijving (laatste in DEMO_ACTIES)
 
 
 def knoei(log: AuditLog) -> AuditLog:
     """Past één bedrag aan zonder de hash te herberekenen: wat een aanvaller zou doen."""
     i = min(TE_KNOEIEN, len(log) - 1)
     oud = log.receipts[i].fields["omschrijving"]
-    nieuw = oud.replace("2.400", "240") if "2.400" in oud else f"{oud} (aangepast)"
+    nieuw = oud.replace("2,400", "240") if "2,400" in oud else f"{oud} (aangepast)"
     return log.tampered_copy(i, "omschrijving", nieuw)
 
 
