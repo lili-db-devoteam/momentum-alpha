@@ -14,6 +14,7 @@ from dataclasses import dataclass
 import pandas as pd
 
 THRESHOLD = 0.6
+GEEN_SITUATIE = "Geen bijzondere situatie"
 
 
 @dataclass(frozen=True)
@@ -122,7 +123,7 @@ def score_all(df: pd.DataFrame) -> tuple[pd.DataFrame, float]:
     best_score = scores.max(axis=1)
     out = pd.DataFrame({
         "klant_id": df.klant_id,
-        "situatie": best.where(best_score >= THRESHOLD, "Geen bijzondere situatie"),
+        "situatie": best.where(best_score >= THRESHOLD, GEEN_SITUATIE),
         "score": best_score.round(2),
     })
     return out, time.perf_counter() - t0
