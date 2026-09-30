@@ -57,3 +57,17 @@ def test_receipts_are_per_customer(at):
     _run_agent(at)
     at.selectbox(key="klant").set_value("Voorbeeld: Terug van reis").run()
     assert not any("Keten geverifieerd" in s.value for s in at.success)
+
+
+def test_future_self_without_key_shows_safe_template(at):
+    at.button(key="fs_praat").click().run()
+    assert not at.exception
+    assert "Hey, ik ben jij, op 72" in at.chat_message[0].markdown[0].value
+    assert any("Cijfercheck OK" in s.value for s in at.success)
+
+
+def test_future_self_answer_is_per_customer(at):
+    at.button(key="fs_praat").click().run()
+    assert len(at.chat_message) == 1
+    at.selectbox(key="klant").set_value("Voorbeeld: Terug van reis").run()
+    assert len(at.chat_message) == 0

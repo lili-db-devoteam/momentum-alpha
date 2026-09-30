@@ -2,20 +2,32 @@
 
 1. Python berekent de scenario's (geen LLM).
 2. Het LLM krijgt enkel die feiten als JSON en spreekt als de klant op 72.
-3. Een cijfercheck controleert dat elk getal in de output uit de feiten komt.
-   Faalt de check, dan tonen we de veilige, vooraf opgestelde tekst.
+3. De output wordt gecontroleerd: elk getal moet uit de feiten komen, en er mogen
+   geen links, e-mailadressen of HTML in staan. Faalt een check, dan tonen we de
+   veilige, vooraf opgestelde tekst.
 """
 from __future__ import annotations
 
 import json
-import os
+import logging
+import math
 import re
+from collections.abc import Callable
+from dataclasses import dataclass, field
+
+from engine.llm import LLMClient, LLMError
+
+log = logging.getLogger("glassbox.future_self")
 
 # Aannames, zichtbaar in de app en README. Geen advies.
 PENSIOENLEEFTIJD = 67      # aanname voor de demo
 RENDEMENT = 0.03           # aanname: jaarlijks rendement op spaargeld/beleggingen
 UITKEERJAREN = 20          # kapitaal verdeeld over 20 jaar na pensioen
 EXTRA_SPAREN = 250         # scenario B: extra per maand
+MAX_VRAAG = 300
+MAX_WOORDEN = 200
+STANDAARD_VRAAG = "Wat wil je me vertellen?"
+BRON_GEMINI = "Gemini, gecontroleerd"
 
 SYSTEM_PROMPT = """Je bent {naam} op 72 jaar en je spreekt met jezelf op {leeftijd}.
 Regels, altijd:
@@ -112,45 +124,77 @@ def fallback_text(f: dict) -> str:
     )
 
 
-def speak(facts: dict, vraag: str = "") -> dict:
-    """Geeft {'tekst', 'bron', 'check_ok', 'getallen', 'fout'}."""
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    vraag = (vraag or "").strip()[:300]
-    if not api_key:
-        tekst = fallback_text(facts)
-        ok, found, bad = check_numbers(tekst, facts)
-        return {"tekst": tekst, "bron": "sjabloon (geen API-key)", "check_ok": ok, "getallen": found, "fout": bad}
+_CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_HTML = re.compile(r"<\s*/?\s*[a-zA-Z][^>]*>")
+_MD_LINK = re.compile(r"!?\[[^\]]*\]\([^)]*\)|!\[")
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+_URL = re.compile(r"https?://|www\.|\b[\w-]+\.(?:com|be|nl|net|org|eu|io|info|biz|app|co|ly|me)\b", re.IGNORECASE)
+_VERBODEN = ((_HTML, "HTML"), (_MD_LINK, "markdown-link"), (_EMAIL, "e-mailadres"), (_URL, "URL"))
 
+
+def clean_question(vraag: str | None) -> str:
+    return _CTRL.sub(" ", vraag or "").strip()[:MAX_VRAAG]
+
+
+def check_output(text: str, facts: dict) -> tuple[bool, str, list[int], list[int]]:
+    """(ok, reden, getallen, foute_getallen). reden is leeg als alles klopt."""
+    found = sorted(_numbers_in(text))
+    if not text.strip():
+        return False, "leeg", found, []
+    if len(text.split()) > MAX_WOORDEN:
+        return False, "te lang", found, []
+    for pattern, reden in _VERBODEN:
+        if pattern.search(text):
+            return False, reden, found, []
+    ok, found, bad = check_numbers(text, facts)
+    return ok, "" if ok else "getal niet uit berekening", found, bad
+
+
+@dataclass(frozen=True)
+class SpeakResult:
+    tekst: str
+    bron: str
+    getallen: list[int] = field(default_factory=list)
+    fout: list[int] = field(default_factory=list)
+    reden: str = ""        # waarom LLM-output geweigerd werd; leeg als niet geweigerd
+    geweigerd: str = ""    # de geweigerde LLM-output, enkel als platte tekst tonen
+    from_llm: bool = False
+    rate_limited: bool = False
+
+
+def _sjabloon(facts: dict, bron: str, **extra) -> SpeakResult:
+    tekst = fallback_text(facts)
+    return SpeakResult(tekst=tekst, bron=bron, getallen=sorted(_numbers_in(tekst)), **extra)
+
+
+def speak(facts: dict, vraag: str = "", llm: LLMClient | None = None,
+          gate: Callable[[], tuple[bool, int]] | None = None) -> SpeakResult:
+    """Laat de toekomstige zelf spreken. Faalt eender wat, dan komt het veilige sjabloon."""
+    vraag = clean_question(vraag)
+    if llm is None:
+        return _sjabloon(facts, "sjabloon (geen API-key)")
+    if gate is not None:
+        ok, retry_s = gate()
+        if not ok:
+            log.info("rate_limited retry_after_s=%d", retry_s)
+            minuten = max(1, math.ceil(retry_s / 60))
+            return _sjabloon(facts, f"Limiet bereikt — veilige sjabloontekst getoond (opnieuw over {minuten} min).",
+                             rate_limited=True)
+
+    system = SYSTEM_PROMPT.format(naam=facts["naam"], leeftijd=facts["leeftijd_nu"],
+                                  feiten=json.dumps(facts, ensure_ascii=False, indent=2))
+    log.info("llm_call vraag=%r", vraag[:50])
     try:
-        from google import genai
-        from google.genai import types
+        tekst = llm.generate(system, vraag or STANDAARD_VRAAG)
+    except LLMError as exc:
+        log.warning("llm_error category=%s", exc.category)
+        return _sjabloon(facts, f"sjabloon (LLM-fout: {exc.category})")
+    except Exception as exc:  # bug in de client: nooit de tab laten crashen
+        log.error("llm_error category=onbekend type=%s", type(exc).__name__)
+        return _sjabloon(facts, "sjabloon (LLM-fout: onbekend)")
 
-        client = genai.Client(api_key=api_key)
-        resp = client.models.generate_content(
-            model=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"),
-            contents=vraag or "Wat wil je me vertellen?",
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT.format(
-                    naam=facts["naam"], leeftijd=facts["leeftijd_nu"],
-                    feiten=json.dumps(facts, ensure_ascii=False, indent=2)),
-                temperature=0.6,
-                max_output_tokens=400,
-            ),
-        )
-        tekst = (resp.text or "").strip()
-    except Exception as exc:  # netwerk, quota, ...
-        tekst = ""
-        err = type(exc).__name__
-    else:
-        err = None
-
-    if not tekst:
-        tekst = fallback_text(facts)
-        ok, found, bad = check_numbers(tekst, facts)
-        return {"tekst": tekst, "bron": f"sjabloon (LLM-fout: {err})", "check_ok": ok, "getallen": found, "fout": bad}
-
-    ok, found, bad = check_numbers(tekst, facts)
+    ok, reden, found, bad = check_output(tekst, facts)
     if not ok:
-        return {"tekst": fallback_text(facts), "bron": "sjabloon (LLM-output geweigerd door cijfercheck)",
-                "check_ok": False, "getallen": found, "fout": bad, "geweigerd": tekst}
-    return {"tekst": tekst, "bron": "Gemini, gecontroleerd", "check_ok": True, "getallen": found, "fout": []}
+        log.info("llm_rejected reden=%s", reden)
+        return _sjabloon(facts, "sjabloon (LLM-output geweigerd)", reden=reden, geweigerd=tekst, fout=bad)
+    return SpeakResult(tekst=tekst, bron=BRON_GEMINI, getallen=found, from_llm=True)

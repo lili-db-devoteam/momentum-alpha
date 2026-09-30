@@ -10,7 +10,9 @@ import streamlit as st
 
 from engine.config import ConfigError, Settings, configure_logging, merge_secrets
 from engine.data import MARC_ID, generate_customers
+from engine.llm import GeminiClient, client_from_settings
 from engine.model import SITUATION_BY_NAME, score_all
+from engine.ratelimit import SlidingWindowLimiter
 from ui.context import DemoContext
 from ui.registry import TABS
 
@@ -30,6 +32,16 @@ def get_settings() -> Settings:
     settings = Settings.from_env()
     configure_logging(settings.log_level)
     return settings
+
+
+@st.cache_resource
+def get_llm() -> GeminiClient | None:
+    return client_from_settings(get_settings())
+
+
+@st.cache_resource
+def get_global_limiter() -> SlidingWindowLimiter:
+    return SlidingWindowLimiter(get_settings().rate_global_per_hour, 3_600)
 
 
 @st.cache_data(max_entries=3)
@@ -61,7 +73,8 @@ for sit in SITUATION_BY_NAME:
 keuze = st.sidebar.selectbox("Klant", list(voorbeelden), key="klant", label_visibility="collapsed")
 klant = data.loc[data.klant_id == voorbeelden[keuze]].iloc[0]
 
-ctx = DemoContext(settings=settings, data=data, klant=klant, naam=klant["naam"] or "Klant", score_secs=secs)
+ctx = DemoContext(settings=settings, data=data, klant=klant, naam=klant["naam"] or "Klant", score_secs=secs,
+                  llm=get_llm(), global_limiter=get_global_limiter())
 for tab, (_, render) in zip(st.tabs([label for label, _ in TABS]), TABS, strict=True):
     with tab:
         render(ctx)
