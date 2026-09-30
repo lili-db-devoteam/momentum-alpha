@@ -13,10 +13,16 @@ from engine.data import MARC_ID, generate_customers
 from engine.llm import GeminiClient, client_from_settings
 from engine.model import SITUATION_BY_NAME, score_all
 from engine.ratelimit import SlidingWindowLimiter
+from ui import phone_demo
 from ui.context import DemoContext
 from ui.registry import TABS
 
-st.set_page_config(page_title="Glass Box Banking", page_icon="🔍", layout="wide")
+DEMO_MODE = "demo" in st.query_params  # ?demo=1: enkel de telefoon + glass box, zonder zijbalk en tabs
+st.set_page_config(page_title="Glass Box Banking", page_icon="🔍", layout="wide",
+                   initial_sidebar_state="collapsed" if DEMO_MODE else "auto")
+if DEMO_MODE:
+    phone_demo.render_fullscreen()
+    st.stop()
 
 
 def _secrets() -> dict:
