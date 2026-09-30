@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from engine.config import ConfigError, Settings, configure_logging, merge_secrets
 from engine.data import MARC_ID, generate_customers
 from engine.future_self import PENSIOENLEEFTIJD, RENDEMENT, project, speak
 from engine.mandate import DEMO_ACTIES, GEBLOKKEERD, UITGEVOERD, Mandaat, beslis
@@ -17,12 +18,27 @@ from engine.model import SITUATION_BY_NAME, THRESHOLD, explain, reasons_text, sc
 
 st.set_page_config(page_title="Glass Box Banking", page_icon="🔍", layout="wide")
 
-# Optioneel: API-key uit .streamlit/secrets.toml, nooit in code.
+
+def _secrets() -> dict:
+    try:
+        return dict(st.secrets)
+    except Exception:  # geen secrets.toml: prima, dan enkel omgevingsvariabelen
+        return {}
+
+
+@st.cache_resource
+def get_settings() -> Settings:
+    merge_secrets(_secrets(), os.environ)
+    settings = Settings.from_env()
+    configure_logging(settings.log_level)
+    return settings
+
+
 try:
-    if "GEMINI_API_KEY" in st.secrets and not os.environ.get("GEMINI_API_KEY"):
-        os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
-except Exception:  # noqa: S110 - geen secrets-bestand is prima; de app werkt dan zonder API-key
-    pass
+    settings = get_settings()
+except ConfigError as exc:
+    st.error(f"Configuratiefout: {exc}")
+    st.stop()
 
 
 @st.cache_data
