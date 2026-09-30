@@ -1,8 +1,11 @@
+import os
 from pathlib import Path
 
 import pytest
+import streamlit as st
 from streamlit.testing.v1 import AppTest
 
+from engine.config import KNOWN_KEYS
 from ui.registry import TABS
 
 APP = str(Path(__file__).parents[1] / "app.py")
@@ -10,11 +13,17 @@ APP = str(Path(__file__).parents[1] / "app.py")
 
 @pytest.fixture
 def at(monkeypatch):
-    for key in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+    saved_env = dict(os.environ)
+    for key in KNOWN_KEYS:
         monkeypatch.delenv(key, raising=False)
+    st.cache_resource.clear()
     app = AppTest.from_file(APP, default_timeout=60)
+    app.secrets["GEMINI_API_KEY"] = ""  # niet-lege dict: AppTest leest het echte secrets.toml dan nooit
     app.run()
-    return app
+    yield app
+    os.environ.clear()
+    os.environ.update(saved_env)
+    st.cache_resource.clear()
 
 
 def test_all_tabs_render_for_marc(at):
@@ -71,3 +80,10 @@ def test_future_self_answer_is_per_customer(at):
     assert len(at.chat_message) == 1
     at.selectbox(key="klant").set_value("Voorbeeld: Terug van reis").run()
     assert len(at.chat_message) == 0
+
+
+def test_suite_is_offline_and_uses_template(at):
+    assert not os.environ.get("GEMINI_API_KEY")
+    at.button(key="fs_praat").click().run()
+    assert not at.exception
+    assert any("sjabloon (geen API-key)" in s.value for s in at.success)
