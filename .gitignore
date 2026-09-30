@@ -1,7 +1,22 @@
 .env
+.env.*
+!.env.example
 .streamlit/secrets.toml
 __pycache__/
 *.pyc
 .venv/
+venv/
 .pytest_cache/
 .ruff_cache/
+
+# Sleutels en inloggegevens: de repo is publiek
+*.pem
+*.key
+*.p12
+*-credentials.json
+service-account*.json
+gcp-key*.json
+
+# Enkel lokaal (bv. de hackathon-gids)
+*.pdf
+.DS_Store

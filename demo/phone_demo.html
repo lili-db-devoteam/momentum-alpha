@@ -1,0 +1,407 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glass Box Banking</title>
+<meta name="description" content="Prototype: one screen, the customer on the left, the glass box on the right.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: klantervaring (telefoon) links, de glass box (live uitleg van het model) rechts; bovenaan de 4 stappen van het verhaal. */
+:root{
+  --paper:#F2F3EF; --surface:#FBFBF8; --ink:#141B2D; --muted:#5A6376; --line:#D6DAE0;
+  --glass:#0B7F78; --glass-soft:#DDEFEC; --ask:#9A6412; --ask-soft:#F6EAD3; --block:#B5381F; --block-soft:#F6DFD8;
+  --console:#0A1F3D; --console-ink:#D5DEEC; --console-dim:#8491A8; --console-hi:#6FE0D2;
+  --phone-frame:#141B2D;
+  --f-display:'Bricolage Grotesque', 'Trebuchet MS', sans-serif;
+  --f-body:'Figtree', 'Helvetica Neue', Arial, sans-serif;
+  --f-mono:'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0C1120; --surface:#141B2D; --ink:#E7EBF2; --muted:#9AA4B8; --line:#273149;
+  --glass:#4FD1C5; --glass-soft:#123A3A; --ask:#E9B45A; --ask-soft:#3A2C12; --block:#F0826C; --block-soft:#3D1D17;
+  --console:#070B16; --console-ink:#D5DEEC; --console-dim:#7D8AA3; --console-hi:#6FE0D2; --phone-frame:#2A3552; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0C1120; --surface:#141B2D; --ink:#E7EBF2; --muted:#9AA4B8; --line:#273149;
+  --glass:#4FD1C5; --glass-soft:#123A3A; --ask:#E9B45A; --ask-soft:#3A2C12; --block:#F0826C; --block-soft:#3D1D17;
+  --console:#070B16; --console-ink:#D5DEEC; --console-dim:#7D8AA3; --console-hi:#6FE0D2; --phone-frame:#2A3552; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+h1{font-family:var(--f-display);font-weight:700;font-size:30px;letter-spacing:-.5px;margin:0;line-height:1.1}
+.tag{color:var(--muted);font-size:14px;max-width:560px;margin:4px 0 0}
+.steps{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0}
+.steps button{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:8px 12px;border-radius:999px;cursor:pointer}
+.steps button[aria-current="step"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.steps button:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--glass);outline-offset:2px}
+.stage{display:grid;grid-template-columns:380px minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:900px){.stage{grid-template-columns:minmax(0,1fr)}}
+
+/* Telefoon */
+.phone{width:100%;max-width:380px;margin:0 auto;background:var(--phone-frame);border-radius:46px;padding:12px}
+.screen{background:var(--surface);border-radius:36px;height:720px;overflow-y:auto;position:relative;display:flex;flex-direction:column}
+.sbar{display:flex;justify-content:space-between;padding:14px 24px 6px;font:600 12px var(--f-body);color:var(--muted)}
+.view{padding:8px 18px 22px;display:flex;flex-direction:column;gap:14px;flex:1}
+.hello{font-size:13px;color:var(--muted)}
+.bal{font-family:var(--f-display);font-size:34px;font-weight:700;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.card{border:1px solid var(--line);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.eyebrow{font:600 11px var(--f-body);letter-spacing:1.4px;text-transform:uppercase;color:var(--glass)}
+.card h2{font-family:var(--f-display);font-size:22px;line-height:1.15;margin:0;text-wrap:balance}
+.card p{margin:0;color:var(--muted)}
+.btn{font:600 14px var(--f-body);border:0;border-radius:999px;padding:11px 16px;cursor:pointer;background:var(--glass);color:var(--surface)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.small{padding:7px 12px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+details.why{border-top:1px dashed var(--line);padding-top:8px}
+details.why summary{cursor:pointer;font-weight:600;font-size:14px}
+.sig{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 0;font-size:13px}
+.sig .bar{grid-column:1/-1;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.sig .bar i{display:block;height:100%;background:var(--glass)}
+.sig.off{opacity:.45}.sig.off .bar i{background:var(--muted)}
+.switch{appearance:none;width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;margin:0}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface);transition:left .15s}
+.switch:checked{background:var(--glass)}.switch:checked::after{left:16px}
+.quiet{font-size:12px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:2px}
+.list div{display:flex;justify-content:space-between;padding:9px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.list span:last-child{font-variant-numeric:tabular-nums}
+.scen{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.scen div{border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--paper)}
+.scen b{display:block;font-family:var(--f-display);font-size:22px;font-variant-numeric:tabular-nums}
+.scen .b{border-color:var(--glass);background:var(--glass-soft)}
+.bubble{background:var(--paper);border:1px solid var(--line);border-radius:18px 18px 18px 4px;padding:12px 14px;font-size:14px}
+.avatar{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.avatar i{width:34px;height:34px;border-radius:50%;background:var(--glass-soft);display:grid;place-items:center;font-style:normal;font-weight:700;color:var(--glass)}
+.rule{border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--paper)}
+.rule label{font-size:14px;font-weight:600}
+.rule input[type=range]{width:100%;accent-color:var(--glass)}
+.rule .val{font:600 13px var(--f-mono);color:var(--glass)}
+.note{border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);animation:in .35s ease both}
+.note .st{font:600 12px var(--f-body);letter-spacing:.8px;text-transform:uppercase}
+.note.ok{background:var(--glass-soft);border-color:transparent}.note.ok .st{color:var(--glass)}
+.note.ask{background:var(--ask-soft);border-color:transparent}.note.ask .st{color:var(--ask)}
+.note.block{background:var(--block-soft);border-color:transparent}.note.block .st{color:var(--block)}
+@keyframes in{from{transform:translateY(6px);opacity:.3}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.note{animation:none}}
+.call{position:absolute;inset:0;background:linear-gradient(180deg,#0B2A4F,#12497F);color:var(--console-ink);display:flex;flex-direction:column;justify-content:space-between;padding:60px 24px 40px;border-radius:36px;text-align:center}
+.call h3{font-family:var(--f-display);font-size:26px;margin:8px 0 0}
+.call p{color:var(--console-dim)}
+.call .big{font-size:18px;color:var(--console-ink);line-height:1.4}
+
+/* KBC Mobile-stijl in de telefoon: altijd licht */
+.screen{--paper:#F3F7FA;--surface:#FFFFFF;--ink:#0B2A4F;--muted:#5C6E86;--line:#E2E9F0;--glass:#1B9AD6;--glass-soft:#E4F3FB;
+  --ask:#9A6412;--ask-soft:#FBF1DE;--block:#C0392B;--block-soft:#FBE4E0;--f-display:'Nunito Sans',Arial,sans-serif;--f-body:'Nunito Sans',Arial,sans-serif;
+  background:var(--paper);color:var(--ink);font-family:var(--f-body);color-scheme:light}
+.phone{background:#0B2A4F}
+.screen .card{background:var(--surface);border:0;border-radius:14px;box-shadow:0 2px 10px rgba(11,42,79,.08)}
+.screen .card h2{font-weight:700;font-size:20px}
+.screen .btn{border-radius:10px;font-weight:700}
+.screen .eyebrow{color:var(--ink);text-transform:none;letter-spacing:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px}
+.kdot{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#7FD3F5,#1B9AD6);display:inline-grid;place-items:center;flex:none}
+.kdot::after{content:"";width:8px;height:2px;background:#fff;border-radius:2px;box-shadow:0 -3px 0 #fff,0 3px 0 #fff}
+.topbar{display:flex;gap:10px;align-items:center}
+.av{width:40px;height:40px;border-radius:50%;background:#C9D8E6;display:grid;place-items:center;font-weight:800;color:var(--ink);flex:none;border:2px solid #fff;box-shadow:0 1px 4px rgba(11,42,79,.2)}
+.search{flex:1;display:flex;align-items:center;justify-content:space-between;border:1px solid #C8D5E2;border-radius:999px;padding:9px 12px;color:var(--muted);font-size:14px;background:var(--surface)}
+.kchip{display:flex;align-items:center;gap:4px;font-weight:800;color:var(--ink)}
+.accs{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.acc{min-width:150px;background:var(--surface);border-radius:12px;box-shadow:0 2px 10px rgba(11,42,79,.08);overflow:hidden;flex:none}
+.acc .tile{height:62px;background:linear-gradient(135deg,#38B6EC,#1B9AD6)}
+.acc.sv .tile{background:linear-gradient(135deg,#0E4A86,#0B2A4F)}
+.acc div.t{padding:8px 12px 12px;display:flex;flex-direction:column;gap:2px}
+.acc span{font-size:12px;color:var(--muted)}
+.acc b{font-size:17px;font-variant-numeric:tabular-nums}
+.acc b small{font-size:12px;font-weight:600}
+.pay{display:flex;flex-direction:column}
+.pay div{display:grid;grid-template-columns:44px 1fr auto;gap:6px;padding:7px 2px;font-size:14px}
+.pay em{font-style:normal;font-size:12px;color:var(--muted)}
+.pay span:last-child{font-variant-numeric:tabular-nums}
+.sec{font-size:18px;font-weight:700;margin:4px 0 -4px}
+.x{margin-left:auto;width:20px;height:20px;border-radius:50%;background:var(--paper);display:grid;place-items:center;font-size:11px;color:var(--muted)}
+.tabbar{position:sticky;bottom:-22px;margin:auto -18px -22px;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 4px 12px;font-size:11px;color:var(--muted);text-align:center}
+.tabbar div{display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabbar svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+.tabbar .on{color:var(--ink);font-weight:700}
+.fab{position:sticky;bottom:64px;align-self:flex-end;margin:-56px 16px 8px 0;width:50px;height:50px;border-radius:50%;background:var(--glass);color:#fff;display:grid;place-items:center;font-size:20px;box-shadow:0 4px 12px rgba(27,154,214,.4)}
+.navh{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;justify-content:space-between}
+.navh button{background:none;border:0;font-size:20px;color:var(--glass);cursor:pointer;padding:0 4px}
+/* Glass box */
+.box{background:var(--console);color:var(--console-ink);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:18px;font-family:var(--f-mono);font-size:13px;min-width:0}
+.box h3{font:600 11px var(--f-mono);letter-spacing:1.6px;text-transform:uppercase;color:var(--console-dim);margin:0 0 8px}
+.box .lead{font:500 17px/1.4 var(--f-body);color:var(--console-ink);margin:0}
+.scale{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid #243049;border-radius:14px;padding:10px 12px}
+.kpi b{display:block;font:600 22px var(--f-display);color:var(--console-hi);font-variant-numeric:tabular-nums}
+.kpi span{color:var(--console-dim);font-size:11px}
+.bars{display:flex;flex-direction:column;gap:5px}
+.bars div{display:grid;grid-template-columns:150px minmax(0,1fr) 44px;gap:8px;align-items:center;font-size:12px}
+.bars i{display:block;height:8px;border-radius:2px;background:#2B3A59}
+.bars .me i{background:var(--console-hi)}
+.bars em{font-style:normal;text-align:right;color:var(--console-dim);font-variant-numeric:tabular-nums}
+.trace{border-top:1px solid #243049;padding-top:16px;display:flex;flex-direction:column;gap:6px;overflow-x:auto}
+.ln{white-space:pre-wrap;word-break:break-word}
+.dim{color:var(--console-dim)}.hi{color:var(--console-hi)}.warn{color:#F2C06B}.bad{color:#F48A74}
+.chip{display:inline-block;border:1px solid #2F6B66;color:var(--console-hi);border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0}
+.chip.badc{border-color:#7A3326;color:#F48A74}
+table.log{width:100%;border-collapse:collapse;font-size:12px}
+table.log th{text-align:left;color:var(--console-dim);font-weight:400;padding:4px 6px;border-bottom:1px solid #243049}
+table.log td{padding:6px;border-bottom:1px solid #1B2438;vertical-align:top}
+.foot{font-size:12px;color:var(--muted)}
+@media (max-width:420px){.bars div{grid-template-columns:110px minmax(0,1fr) 40px}.scale{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Glass Box Banking</h1>
+      <p class="tag">Left: what the customer sees. Right: what the model does, live. A concept for the KBC challenge, built on synthetic data.</p>
+    </div>
+    <ol class="steps" id="steps">
+      <li><button data-step="home">1 · Recognize</button></li>
+      <li><button data-step="future">2 · Future Self</button></li>
+      <li><button data-step="mandate">3 · Life Mandate</button></li>
+      <li><button data-step="week">4 · Agent acts</button></li>
+    </ol>
+  </header>
+
+  <section class="stage">
+    <div class="phone" aria-label="Customer app">
+      <div class="screen" id="screen">
+        <div class="sbar"><span>09:41</span><span>KBC Mobile</span></div>
+        <div class="view" id="view"></div>
+      </div>
+    </div>
+    <aside class="box" id="box" aria-live="polite"></aside>
+  </section>
+  <p class="foot">Prototype. All customer data is synthetic; the agent's actions are simulated. The model decides; the LLM only phrases.</p>
+</div>
+
+<script>
+/* ---------- Engine (spiegel van engine/*.py) ---------- */
+const THRESHOLD = 0.6;
+const SITUATIONS = [
+  {naam:"Retirement in sight", sig:[
+    ["leeftijd_55",.35,"Aged between 55 and 66",c=>c.age>=55&&c.age<=66],
+    ["nog_werkend",.25,"Still receiving a salary",c=>c.age<67&&c.income>2200],
+    ["geen_pensioensparen",.25,"No pension savings yet",c=>!c.pens],
+    ["laag_spaarritme",.15,"Saves less than 5% of income",c=>c.spaart<.05*c.income]]},
+  {naam:"Back from a trip", sig:[
+    ["buitenland",.5,"Many card payments abroad",c=>c.foreign>=5],
+    ["gestopt",.3,"Payments abroad have stopped",c=>c.stopped],
+    ["restaurant",.2,"Restaurants more than twice the usual",c=>c.resto>=2]]},
+  {naam:"Moving house", sig:[
+    ["waarborg",.5,"Paid a rental deposit",c=>c.deposit],
+    ["verhuisfirma",.3,"Paid a moving company",c=>c.mover],
+    ["energie",.2,"New energy contract",c=>c.energy]]},
+  {naam:"First salary", sig:[
+    ["eerste_loon",.6,"First salary from an employer",c=>c.first],
+    ["jong",.2,"27 or younger",c=>c.age<=27],
+    ["geen_buffer",.2,"No one-month buffer yet",c=>c.savings<c.expenses]]},
+  {naam:"Young parent", sig:[
+    ["babywinkel",.5,"Spending at baby stores",c=>c.baby>100],
+    ["groeipakket",.4,"Receives child benefit",c=>c.groei],
+    ["leeftijd",.1,"Between 24 and 42",c=>c.age>=24&&c.age<=42]]},
+  {naam:"Fraud-sensitive moment", sig:[
+    ["senior",.3,"65 or older",c=>c.age>=65],
+    ["nieuwe_begunstigde",.5,"Large amount to a new payee",c=>c.newBen],
+    ["nacht",.2,"At an unusual hour",c=>c.night]]},
+];
+const MARC = {id:"C-000058",naam:"Marc",age:58,income:3900,expenses:3150,savings:42000,spaart:150,pens:false,
+  foreign:0,stopped:false,resto:1,deposit:false,mover:false,energy:false,first:false,baby:0,groei:false,newBen:false,night:false};
+
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function generate(n){
+  const r=rng(42), g=()=>Math.sqrt(-2*Math.log(r()||1e-9))*Math.cos(2*Math.PI*r()), out=[];
+  for(let i=0;i<n;i++){
+    const age=18+Math.floor(r()*72), senior=age>=67;
+    const income=Math.max(senior?900:0,(senior?1900+400*g():3000+900*g()));
+    const expenses=income*(.6+.35*r());
+    const c={id:"C-"+String(i).padStart(6,"0"),age,income,expenses,savings:Math.exp(9.3+1.1*g()),spaart:Math.max(0,income-expenses),
+      pens:r()<.45,foreign:0,stopped:false,resto:.5+.9*r(),deposit:false,mover:false,energy:false,first:false,baby:0,groei:false,newBen:false,night:false};
+    if(age>=22&&age<=70&&r()<.08){c.foreign=5+Math.floor(r()*20);c.stopped=r()<.8;c.resto=1.8+2.2*r()}
+    if(age>=22&&age<=60&&r()<.04){c.deposit=r()<.85;c.mover=r()<.6;c.energy=r()<.7}
+    if(age>=20&&age<=27&&r()<.10){c.first=true;c.savings=r()*1500}
+    if(age>=24&&age<=42&&r()<.10){c.baby=120+480*r();c.groei=r()<.9}
+    if(age>=65&&r()<.02){c.newBen=true;c.night=r()<.7}
+    out.push(c);
+  }
+  out[58]=MARC; return out;
+}
+function scoreOne(c,off=new Set()){
+  let best=null;
+  for(const s of SITUATIONS){
+    let sc=0; for(const [k,w,,t] of s.sig) if(t(c)&&!off.has(k)) sc+=w;
+    if(!best||sc>best.score) best={naam:s.naam,score:Math.round(sc*100)/100};
+  }
+  return best.score>=THRESHOLD?best:{naam:"No specific situation",score:best.score};
+}
+function batch(){
+  const t0=performance.now(), all=generate(10000), counts={};
+  for(const c of all){const s=scoreOne(c).naam; counts[s]=(counts[s]||0)+1}
+  return {n:all.length,ms:performance.now()-t0,counts};
+}
+
+/* Future Self: deterministische projectie */
+const PENSIOEN=67, REND=.03, JAREN_UIT=20, EXTRA=250;
+function fv(start,pm,years){const m=REND/12,n=years*12;return start*(1+m)**n+pm*(((1+m)**n-1)/m)}
+const r100=x=>Math.round(x/100)*100;
+function project(c){
+  const jaren=Math.max(PENSIOEN-c.age,1), a=fv(c.savings,c.spaart,jaren), b=fv(c.savings,c.spaart+EXTRA,jaren);
+  const pa=r100(a/(JAREN_UIT*12)), pb=r100(b/(JAREN_UIT*12));
+  return {name:c.naam,age_now:c.age,retirement_age:PENSIOEN,years_to_retirement:jaren,extra_savings_per_month:EXTRA,
+    scenario_a:{description:"keep going as now",saves_per_month:c.spaart,capital_at_retirement:r100(a),extra_per_month_in_retirement:pa},
+    scenario_b:{description:EXTRA+" euro more per month",saves_per_month:c.spaart+EXTRA,capital_at_retirement:r100(b),extra_per_month_in_retirement:pb},
+    difference_per_month:pb-pa};
+}
+const eur=n=>"€"+Math.round(n).toLocaleString("en-GB");
+function futureText(f){const a=f.scenario_a,b=f.scenario_b;
+  return `Hey, it's you, at 72. I remember being ${f.age_now}: retirement felt far away, but it was only ${f.years_to_retirement} years. If you keep going as you are, you'll have about ${a.capital_at_retirement} euro when you retire, roughly ${a.extra_per_month_in_retirement} euro extra a month. Save ${EXTRA} euro more a month and that becomes ${b.capital_at_retirement} euro, or ${b.extra_per_month_in_retirement} euro a month. I won't choose for you. What do you want me to be able to do later?`}
+function numbersIn(t){return [...new Set((t.match(/\d[\d.,]*/g)||[]).map(x=>+x.replace(/[.,](?=\d{3}\b)/g,"").replace(",",".")))]}
+function allowed(f){const s=new Set([72]);(function w(v){if(v&&typeof v==="object")Object.values(v).forEach(w);else if(typeof v==="number")s.add(v)})(f);return s}
+
+/* Levensmandaat */
+function beslis(a,m,c){
+  const nacht=a.uur>=22||a.uur<7, rules=regels(m);
+  let d;
+  if(m.nacht&&a.nieuw&&nacht&&a.bedrag>m.vraag) d=["block",4,"Large amount, new payee, at night. Kate is calling you."];
+  else if(a.soort==="spaar"&&(c.savings-a.bedrag)<m.buffer*c.expenses) d=["block",1,`After this, only ${((c.savings-a.bedrag)/c.expenses).toFixed(1)} months of buffer left; your minimum is ${m.buffer}.`];
+  else if(a.soort==="energie") d=a.besparing>m.energie?["ok",3,`Saving of €${a.besparing} is above your limit of €${m.energie}.`]:["ask",3,"Saving too small to switch automatically."];
+  else if(a.bedrag>m.vraag) d=["ask",2,`${eur(a.bedrag)} is above your limit of €${m.vraag}.`];
+  else d=["ok",2,`Below your limit of €${m.vraag}.`];
+  return {actie:a.id,description:a.txt,beslissing:d[0],regel:d[1],regeltekst:rules[d[1]-1],waarom:d[2]};
+}
+function regels(m){const r=[`My emergency buffer never drops below ${m.buffer} months of expenses.`,`Anything above €${m.vraag}: ask me first.`,`Switch to cheaper energy if I save more than €${m.energie} a year.`];
+  if(m.nacht) r.push("A large amount at night to a new payee: always block it and call me."); return r}
+const ACTIES=[
+  {id:"A1",soort:"energie",bedrag:0,besparing:140,uur:10,txt:"Energy agent: a contract that is €140 a year cheaper",ctx:"Negotiated by your agent with the supplier's agent."},
+  {id:"A2",soort:"betaling",bedrag:600,uur:11,txt:"Payment of €600 to Garage Janssens",ctx:"Known payee."},
+  {id:"A3",soort:"betaling",bedrag:2400,uur:23,nieuw:true,txt:"€2,400 to a new payee, at 23:10",ctx:"Right after a call from someone claiming to be 'the security team'."},
+  {id:"A4",soort:"spaar",bedrag:35000,uur:14,txt:"€35,000 from savings to an investment account",ctx:"Requested through a link in a text message."},
+];
+async function hash(obj){const s=JSON.stringify(obj);
+  try{const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,12)}
+  catch(e){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))|0;return (h>>>0).toString(16).padStart(8,"0")}}
+
+/* ---------- State + UI ---------- */
+const S={step:"home",off:new Set(),scale:null,m:{buffer:3,vraag:500,energie:100,nacht:true},signed:false,log:[],shown:0,call:false};
+const $=s=>document.querySelector(s), view=$("#view"), box=$("#box");
+const esc=s=>String(s).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+
+function hookBack(){view.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>go('home'))}
+function go(step){S.step=step;S.call=false;render();$("#screen").scrollTop=0}
+document.querySelectorAll("#steps button").forEach(b=>b.onclick=()=>go(b.dataset.step));
+
+function scaleHTML(){const s=S.scale, order=Object.entries(s.counts).filter(([k])=>k!=="No specific situation").sort((a,b)=>b[1]-a[1]), max=order[0][1];
+  return `<div><h3>Scale · one engine for everyone</h3>
+  <div class="scale"><div class="kpi"><b>${s.n.toLocaleString("en-GB")}</b><span>customers scored</span></div>
+  <div class="kpi"><b>${Math.max(1,Math.round(s.ms))} ms</b><span>in your browser, no LLM</span></div>
+  <div class="kpi"><b>€0</b><span>LLM cost for recognition</span></div></div></div>
+  <div class="bars">${order.map(([k,v])=>`<div class="${k==="Retirement in sight"?"me":""}"><span>${k}${k==="Retirement in sight"?" ← Marc":""}</span><i style="width:${v/max*100}%"></i><em>${v}</em></div>`).join("")}</div>`}
+
+function render(){
+  document.querySelectorAll("#steps button").forEach(b=>b.dataset.step===S.step?b.setAttribute("aria-current","step"):b.removeAttribute("aria-current"));
+  ({home:rHome,future:rFuture,mandate:rMandate,week:rWeek})[S.step]();
+  hookBack();
+}
+
+const ic={home:'<path d="M3 11l9-7 9 7v9h-6v-6H9v6H3z"/>',list:'<path d="M4 6h16M4 12h16M4 18h16"/>',inv:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',offer:'<path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/>'};
+const TABBAR=`<nav class="tabbar">${[["home","Start",1],["list","My KBC"],["inv","Investments"],["offer","Offer"]].map(([k,t,on])=>`<div class="${on?"on":""}"><svg viewBox="0 0 24 24">${ic[k]}</svg>${t}</div>`).join("")}</nav>`;
+const NAV=t=>`<div class="navh"><button data-back aria-label="Back">‹</button><span>${t}</span><i class="kdot"></i></div>`;
+function rHome(){
+  const sit=SITUATIONS[0], res=scoreOne(MARC,S.off), show=res.naam==="Retirement in sight";
+  const sigs=sit.sig.map(([k,w,txt,t])=>({k,w,txt,on:t(MARC)&&!S.off.has(k)}));
+  let score=0; sigs.forEach(s=>{if(s.on)score+=s.w});
+  view.innerHTML=`<div class="topbar"><div class="av">M</div><div class="search"><span>How can I help?</span><span class="kchip"><i class="kdot"></i>Kate</span></div></div>
+    <div class="accs"><div class="acc"><div class="tile"></div><div class="t"><span>Personal account</span><b>1 990<small>,00 EUR</small></b></div></div>
+    <div class="acc sv"><div class="tile"></div><div class="t"><span>Savings account</span><b>42 000<small>,00 EUR</small></b></div></div></div>
+    <div class="pay"><div><em>29/09</em><span>Colruyt</span><span>-64,20 EUR</span></div><div><em>25/09</em><span>Salary</span><span>+3 900,00 EUR</span></div><div><em>12/09</em><span>Energy</span><span>-118,00 EUR</span></div></div>
+    <div class="sec">For you</div>
+    ${show?`<div class="card"><span class="eyebrow"><i class="kdot"></i>Kate's tips<span class="x">✕</span></span>
+      <h2>Marc, your retirement is in sight.</h2>
+      <p>It's 9 years away. See in two minutes what you can still do.</p>
+      <div class="row"><button class="btn" id="toFuture">Talk to yourself at 72</button></div>
+      <details class="why" open><summary>Why am I seeing this?</summary>
+      ${sigs.map(s=>`<div class="sig ${s.on?"":"off"}"><span>${s.txt}</span><input type="checkbox" class="switch" id="sw_${s.k}" data-k="${s.k}" ${s.on?"checked":""} aria-label="Signal: ${s.txt}"><div class="bar"><i style="width:${s.w/0.35*100}%"></i></div></div>`).join("")}
+      <p class="quiet">Switch a signal off and we stop using it.</p></details></div>`
+    :`<div class="card"><span class="eyebrow"><i class="kdot"></i>Kate · signal switched off</span><h2>We won't show this anymore.</h2><p>You switched signals off, so the score dropped below the threshold. You can switch them back on anytime.</p>
+      <details class="why" open><summary>My signals</summary>${sigs.map(s=>`<div class="sig ${s.on?"":"off"}"><span>${s.txt}</span><input type="checkbox" class="switch" id="sw_${s.k}" data-k="${s.k}" ${s.on?"checked":""} aria-label="Signal: ${s.txt}"><div class="bar"><i style="width:${s.w/0.35*100}%"></i></div></div>`).join("")}</details></div>`}
+    <div class="card"><span class="eyebrow"><i class="kdot"></i>Kate's tips<span class="x">✕</span></span><p>See what's new in KBC Mobile now!</p></div>
+    `+TABBAR;
+  view.querySelectorAll(".switch").forEach(el=>el.onchange=()=>{el.checked?S.off.delete(el.dataset.k):S.off.add(el.dataset.k);rHome()});
+  const b=$("#toFuture"); if(b) b.onclick=()=>go("future");
+  box.innerHTML=`<p class="lead">The bank recognizes a life situation with weighted rules, not a black box.</p>
+  ${scaleHTML()}
+  <div class="trace"><h3>Trace · customer C-000058 (Marc, 58)</h3>
+  ${sigs.map(s=>`<div class="ln">${s.on?'<span class="hi">✓</span>':'<span class="dim">·</span>'} ${s.k.padEnd(20)} <span class="${s.on?"hi":"dim"}">+${s.w.toFixed(2)}</span>${S.off.has(s.k)?' <span class="warn">switched off by customer</span>':''}</div>`).join("")}
+  <div class="ln">score = <span class="${score>=THRESHOLD?"hi":"warn"}">${score.toFixed(2)}</span>  threshold = ${THRESHOLD}  →  ${score>=THRESHOLD?'<span class="hi">show card "Retirement in sight"</span>':'<span class="warn">no card</span>'}</div>
+  <div class="ln dim">channel: KBC Mobile + Kate with voice · tone: calm, concrete, no jargon</div></div>`;
+}
+
+function rFuture(){
+  const f=project(MARC), txt=futureText(f), nums=numbersIn(txt), ok=allowed(f), bad=nums.filter(n=>!ok.has(n));
+  view.innerHTML=NAV("Kate · Future you")+`<div class="avatar"><i>72</i><span>Marc, at 72<br><span class="quiet">speaks only with calculated numbers</span></span></div>
+    <div class="scen"><div><span class="quiet">As now</span><b>${eur(f.scenario_a.extra_per_month_in_retirement)}</b><span class="quiet">extra per month</span></div>
+    <div class="b"><span class="quiet">+ €${EXTRA} saved/month</span><b>${eur(f.scenario_b.extra_per_month_in_retirement)}</b><span class="quiet">extra per month</span></div></div>
+    <div class="bubble">${esc(txt)}</div>
+    <p class="quiet">A projection, not advice. Assumptions: retirement at ${PENSIOEN}, ${REND*100}% return, capital spread over ${JAREN_UIT} years.</p>
+    <div class="card"><span class="eyebrow">From insight to agreement</span><p>Turn what your future self wants into rules Kate follows.</p>
+    <div class="row"><button class="btn" id="toMandate">Create my Life Mandate</button></div></div>`;
+  $("#toMandate").onclick=()=>go("mandate");
+  box.innerHTML=`<p class="lead">The language model speaks, but it only receives these facts. Every number in its answer is checked.</p>
+  <div class="trace" style="border:0;padding:0"><h3>Input for the language model (only source)</h3><div class="ln">${esc(JSON.stringify(f,null,2))}</div></div>
+  <div class="trace"><h3>Number check on the output</h3><div>${nums.map(n=>`<span class="chip ${ok.has(n)?"":"badc"}">${n.toLocaleString("en-GB")} ${ok.has(n)?"✓":"✗"}</span>`).join("")}</div>
+  <div class="ln">${bad.length?'<span class="bad">rejected → safe template shown</span>':'<span class="hi">all '+nums.length+' numbers come from the calculation → shown</span>'}</div>
+  <div class="ln dim">no products · no funds · fixed system prompt · question max. 300 characters</div></div>`;
+}
+
+function rMandate(){
+  const m=S.m;
+  view.innerHTML=NAV("Kate · Life Mandate")+`<div><h2 style="font-family:var(--f-display);margin:4px 0 0;font-size:22px">Your rules. Kate acts within them.</h2></div>
+    <div class="rule"><label for="r1">Emergency buffer never below</label><input type="range" id="r1" min="1" max="12" value="${m.buffer}"><span class="val">${m.buffer} months of expenses</span></div>
+    <div class="rule"><label for="r2">Ask me first above</label><input type="range" id="r2" min="100" max="5000" step="100" value="${m.vraag}"><span class="val">€${m.vraag}</span></div>
+    <div class="rule"><label for="r3">Auto-switch energy from a saving of</label><input type="range" id="r3" min="25" max="500" step="25" value="${m.energie}"><span class="val">€${m.energie} a year</span></div>
+    <div class="rule"><div class="row" style="justify-content:space-between"><label for="r4">Block large amounts to new payees at night</label><input type="checkbox" class="switch" id="r4" ${m.nacht?"checked":""}></div></div>
+    <button class="btn" id="sign">${S.signed?"Approved ✓ · simulate the next week":"I approve these rules"}</button>`;
+  const upd=()=>{m.buffer=+$("#r1").value;m.vraag=+$("#r2").value;m.energie=+$("#r3").value;m.nacht=$("#r4").checked;S.signed=false;S.log=[];rMandate();hookBack()};
+  ["#r1","#r2","#r3"].forEach(id=>$(id).oninput=upd); $("#r4").onchange=upd;
+  $("#sign").onclick=()=>{if(S.signed){go("week")}else{S.signed=true;rMandate();hookBack()}};
+  box.innerHTML=`<p class="lead">The customer approves rules, not every action. That lets an assistant act without breaking trust.</p>
+  <div class="trace" style="border:0;padding:0"><h3>Mandate as policy (machine-readable)</h3>
+  ${regels(m).map((r,i)=>`<div class="ln"><span class="hi">rule ${i+1}</span>  ${esc(r)}</div>`).join("")}
+  <div class="ln dim">{"buffer_months_min": ${m.buffer}, "ask_above": ${m.vraag}, "energy_auto_saving": ${m.energie}, "block_new_payee_at_night": ${m.nacht}}</div>
+  <div class="ln">status: ${S.signed?'<span class="hi">approved by Marc</span>':'<span class="warn">not approved yet · agent does not act</span>'}</div></div>`;
+}
+
+async function rWeek(){
+  if(!S.signed){view.innerHTML=`<div class="card"><h2>Your mandate first.</h2><p>Without approved rules, Kate does not act.</p><button class="btn" id="back">Go to my mandate</button></div>`;$("#back").onclick=()=>go("mandate");
+    box.innerHTML=`<p class="lead">No mandate, no action.</p>`;return}
+  if(!S.log.length){for(const a of ACTIES){const d=beslis(a,S.m,MARC);d.tijd=`${String(a.uur).padStart(2,"0")}:${a.uur===23?"10":"00"}`;d.hash=await hash({...d,m:S.m});S.log.push(d)}S.shown=0;tick();return}
+  if(S.shown<S.log.length){tick();return}
+  drawWeek();
+}
+function tick(){if(S.step!=="week")return;if(S.shown<S.log.length){S.shown++;drawWeek();setTimeout(tick,S.shown===3?1400:900)}}
+function drawWeek(){
+  const label={ok:"Executed",ask:"Asks first",block:"Blocked"};
+  const items=S.log.slice(0,S.shown);
+  view.innerHTML=NAV("Kate · Activity")+`<div><span class="eyebrow">This week</span><h2 style="font-family:var(--f-display);margin:4px 0 0;font-size:24px">Kate acted ${items.length} times.</h2></div>
+    ${items.map(d=>{const a=ACTIES.find(x=>x.id===d.actie);return `<div class="note ${d.beslissing}"><span class="st">${label[d.beslissing]} · rule ${d.regel}</span><b>${esc(d.description)}</b><span class="quiet">${esc(a.ctx)}</span><span>${esc(d.waarom)}</span>
+      ${d.beslissing==="ask"&&!d.gekozen?`<div class="row"><button class="btn small" data-ok="${d.actie}">Approve</button><button class="btn small ghost" data-no="${d.actie}">Decline</button></div>`:""}
+      ${d.gekozen?`<span class="quiet">You chose: ${d.gekozen}</span>`:""}</div>`}).join("")}
+    ${S.shown<S.log.length?'<p class="quiet">…</p>':'<button class="btn ghost" id="again">Play again</button>'}`;
+  view.querySelectorAll("[data-ok],[data-no]").forEach(b=>b.onclick=()=>{const d=S.log.find(x=>x.actie===(b.dataset.ok||b.dataset.no));d.gekozen=b.dataset.ok?"approved":"declined";drawWeek()});
+  hookBack();
+  const ag=$("#again"); if(ag) ag.onclick=()=>{S.log=[];rWeek()};
+  const fraud=items.find(d=>d.actie==="A3"&&d.beslissing==="block");
+  const screen=$("#screen"); screen.querySelector(".call")?.remove();
+  if(fraud&&!fraud.gezien){const c=document.createElement("div");c.className="call";c.innerHTML=`<div><i class="kdot" style="width:64px;height:64px"></i><p>Kate is calling</p><h3>Quick check, Marc</h3></div>
+    <p class="big">Did someone ask you to transfer €2,400? A bank never asks that. The payment stays on hold until you confirm it at your branch or with your card reader.</p>
+    <div class="row" style="justify-content:center"><button class="btn" id="hang">Understood, don't send it</button></div>`;screen.appendChild(c);
+    c.querySelector("#hang").onclick=()=>{fraud.gezien=true;c.remove()}}
+  box.innerHTML=`<p class="lead">Every action is checked against the mandate and gets a receipt.</p>
+  <div style="overflow-x:auto"><table class="log"><thead><tr><th>time</th><th>action</th><th>decision</th><th>rule</th><th>receipt</th></tr></thead><tbody>
+  ${items.map(d=>`<tr><td>${d.tijd}</td><td>${esc(d.description)}</td><td class="${d.beslissing==="ok"?"hi":d.beslissing==="ask"?"warn":"bad"}">${label[d.beslissing]}${d.gekozen?" → "+d.gekozen:""}</td><td>${d.regel}</td><td class="dim">${d.hash}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div class="trace"><div class="ln">A scammer can call Marc, but he cannot get through Marc's mandate.</div><div class="ln dim">audit log: readable for the customer and for compliance</div></div>`;
+}
+
+S.scale=batch(); render();
+</script>

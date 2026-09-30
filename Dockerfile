@@ -15,6 +15,8 @@ RUN pip install -r requirements.txt
 COPY --chown=app:app app.py ./
 COPY --chown=app:app engine ./engine
 COPY --chown=app:app ui ./ui
+COPY --chown=app:app demo ./demo
+COPY --chown=app:app assets ./assets
 COPY --chown=app:app .streamlit/config.toml ./.streamlit/config.toml
 
 USER app
