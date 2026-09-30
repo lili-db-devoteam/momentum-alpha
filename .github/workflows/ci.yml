@@ -1,0 +1,35 @@
+name: ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest -q
+      - run: pip-audit -r requirements.txt
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t glassbox:ci .
+      - name: Container starts and is healthy
+        run: |
+          docker run -d --name gb -p 8501:8501 glassbox:ci
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:8501/_stcore/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs gb
+          exit 1
